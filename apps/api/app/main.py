@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 from contextlib import asynccontextmanager
 import os
@@ -77,3 +77,23 @@ def read_notes():
     with Session(engine) as session:
         notes = session.exec(select(Note)).all()
         return notes
+
+
+@app.delete("/notes/{note_id}", status_code=204)
+def delete_note(note_id: int):
+    """
+    Delete a note by its ID.
+    """
+    with Session(engine) as session:
+        # Find the note by its ID
+        note = session.get(Note, note_id)
+        if not note:
+            # If the note doesn't exist, raise a 404 error
+            raise HTTPException(status_code=404, detail="Note not found")
+        
+        # Delete the note and commit the transaction
+        session.delete(note)
+        session.commit()
+        
+        # Return a 204 No Content response, as is standard for DELETE requests
+        return
