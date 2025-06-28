@@ -1,0 +1,34 @@
+# Git files
+.git
+.gitignore
+
+# Docker files
+.dockerignore
+Dockerfile
+docker-compose.yml
+
+# Node modules
+node_modules
+apps/*/node_modules
+
+# Python virtual environment
+apps/*/venv
+apps/*/__pycache__
+
+# Build outputs
+apps/*/.next
+apps/*/dist
+.pnpm-store
+
+# IDE and OS files
+.vscode
+.idea
+.DS_Store
+
+# Temp files
+*.log
+*.lock
+
+# Documentation and temporary folders
+templete/
+plan.md
