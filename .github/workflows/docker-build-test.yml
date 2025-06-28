@@ -20,7 +20,10 @@ jobs:
         run: docker compose build
 
       - name: Run services in background
-        run: docker compose up -d --wait api web db
+        run: docker compose up -d api web db
+
+      - name: Wait for services to start
+        run: sleep 10
 
       - name: Test API service is up
         run: curl --fail http://localhost:8000/
