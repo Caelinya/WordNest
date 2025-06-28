@@ -39,4 +39,11 @@ next-env.d.ts
 
 # Project
 plan.md
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Local data - SQLite database, etc.
+data/
 templete/

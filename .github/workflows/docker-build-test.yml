@@ -20,7 +20,7 @@ jobs:
         run: docker compose build
 
       - name: Run services in background
-        run: docker compose up -d api web db
+        run: docker compose up -d api web
 
       - name: Wait for services to start
         run: sleep 10
