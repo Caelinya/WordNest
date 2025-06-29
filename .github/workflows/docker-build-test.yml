@@ -16,6 +16,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Create .env file for API
+        run: echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" > apps/api/.env
+
       - name: Build docker images
         run: docker compose build
 
