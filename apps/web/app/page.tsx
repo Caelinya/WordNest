@@ -12,7 +12,15 @@ import {
 import { ReviewNotes } from "@/components/features/ReviewNotes";
 
 export default function Home() {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+        <div className="container mx-auto flex min-h-screen items-center justify-center">
+            <p>Loading...</p>
+        </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (

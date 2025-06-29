@@ -2,10 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlmodel import Session, select
 from datetime import timedelta, datetime
-from pydantic import BaseModel
-
 from .db import engine
-from .models import User, Note
+from .models import User
+from .schemas import UserCreate, UserRead, Token
 
 # Security utilities
 import bcrypt
@@ -20,7 +19,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
     raise ValueError("No SECRET_KEY set for JWT")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
 
 router = APIRouter()
 
@@ -66,17 +65,8 @@ def get_current_user(token: str = Depends(oauth2_scheme), session: Session = Dep
         raise credentials_exception
     return user
 
-# --- Pydantic Models ---
-class UserCreate(BaseModel):
-    username: str
-    password: str
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
 # --- API Endpoints ---
-@router.post("/register", response_model=User)
+@router.post("/register", response_model=UserRead)
 def register(user: UserCreate, session: Session = Depends(get_session)):
     db_user = session.exec(select(User).where(User.username == user.username)).first()
     if db_user:
