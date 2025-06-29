@@ -1,14 +1,21 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Note } from '@/types/notes';
+
+interface EditableItem {
+  id: number;
+  text: string;
+  isSelected: boolean;
+}
 
 interface ImportReviewerProps {
   items: string[];
@@ -17,27 +24,43 @@ interface ImportReviewerProps {
 }
 
 export function ImportReviewer({ items, open, onOpenChange }: ImportReviewerProps) {
-  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set(items));
+  const [editableItems, setEditableItems] = useState<EditableItem[]>([]);
   const queryClient = useQueryClient();
 
-  const handleCheckboxChange = (item: string) => {
-    setSelectedItems(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(item)) {
-        newSet.delete(item);
-      } else {
-        newSet.add(item);
-      }
-      return newSet;
-    });
+  useEffect(() => {
+    // Populate state when items prop changes
+    setEditableItems(
+      items.map((item, index) => ({
+        id: index,
+        text: item,
+        isSelected: true, // Select all by default
+      }))
+    );
+  }, [items, open]); // Rerun when a new import happens
+
+  const handleCheckboxChange = (id: number) => {
+    setEditableItems(prevItems =>
+      prevItems.map(item =>
+        item.id === id ? { ...item, isSelected: !item.isSelected } : item
+      )
+    );
   };
 
+  const handleTextChange = (id: number, newText: string) => {
+     setEditableItems(prevItems =>
+      prevItems.map(item =>
+        item.id === id ? { ...item, text: newText } : item
+      )
+    );
+  };
+
+  const selectedCount = editableItems.filter(item => item.isSelected).length;
+
   const handleSelectAll = () => {
-    if (selectedItems.size === items.length) {
-      setSelectedItems(new Set());
-    } else {
-      setSelectedItems(new Set(items));
-    }
+    const allSelected = selectedCount === editableItems.length;
+    setEditableItems(prevItems =>
+      prevItems.map(item => ({ ...item, isSelected: !allSelected }))
+    );
   };
 
   const batchCreateMutation = useMutation<Note[], Error, { text: string }[]>({
@@ -59,9 +82,12 @@ export function ImportReviewer({ items, open, onOpenChange }: ImportReviewerProp
 
 
   const handleImport = () => {
-    const notesToCreate = Array.from(selectedItems).map(item => ({ text: item }));
+    const notesToCreate = editableItems
+      .filter(item => item.isSelected && item.text.trim() !== "")
+      .map(item => ({ text: item.text }));
+      
     if (notesToCreate.length === 0) {
-        toast.warning("Please select at least one item to import.");
+        toast.warning("Please select at least one non-empty item to import.");
         return;
     }
     batchCreateMutation.mutate(notesToCreate);
@@ -79,25 +105,27 @@ export function ImportReviewer({ items, open, onOpenChange }: ImportReviewerProp
         <div className="flex items-center space-x-2 mb-4 border-b pb-4">
             <Checkbox
                 id="select-all"
-                checked={selectedItems.size > 0 && selectedItems.size === items.length}
+                checked={editableItems.length > 0 && selectedCount === editableItems.length}
                 onCheckedChange={handleSelectAll}
             />
             <label htmlFor="select-all" className="font-medium">
-                {selectedItems.size === items.length ? 'Deselect All' : 'Select All'} ({selectedItems.size} / {items.length})
+                {selectedCount === editableItems.length ? 'Deselect All' : 'Select All'} ({selectedCount} / {editableItems.length})
             </label>
         </div>
         <ScrollArea className="h-72">
           <div className="space-y-2">
-            {items.map((item, index) => (
-              <div key={index} className="flex items-center space-x-3 rounded-md p-2 hover:bg-muted">
+            {editableItems.map((item) => (
+              <div key={item.id} className="flex items-center space-x-3">
                 <Checkbox
-                  id={`item-${index}`}
-                  checked={selectedItems.has(item)}
-                  onCheckedChange={() => handleCheckboxChange(item)}
+                  id={`item-${item.id}`}
+                  checked={item.isSelected}
+                  onCheckedChange={() => handleCheckboxChange(item.id)}
                 />
-                <label htmlFor={`item-${index}`} className="flex-1 text-sm cursor-pointer">
-                  {item}
-                </label>
+                <Input
+                  value={item.text}
+                  onChange={(e) => handleTextChange(item.id, e.target.value)}
+                  className="flex-1 h-8"
+                />
               </div>
             ))}
           </div>
@@ -106,8 +134,8 @@ export function ImportReviewer({ items, open, onOpenChange }: ImportReviewerProp
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={batchCreateMutation.isPending}>
             Cancel
           </Button>
-          <Button onClick={handleImport} disabled={selectedItems.size === 0 || batchCreateMutation.isPending}>
-            {batchCreateMutation.isPending ? 'Importing...' : `Import ${selectedItems.size} Items`}
+          <Button onClick={handleImport} disabled={selectedCount === 0 || batchCreateMutation.isPending}>
+            {batchCreateMutation.isPending ? 'Importing...' : `Import ${selectedCount} Items`}
           </Button>
         </DialogFooter>
       </DialogContent>
