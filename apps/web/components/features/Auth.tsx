@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,15 +27,10 @@ export function Auth() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: registerUsername,
-          password: registerPassword,
-        }),
+      await api.post("/auth/register", {
+        username: registerUsername,
+        password: registerPassword,
       });
-      if (!response.ok) throw new Error("Registration failed");
       toast.success("Registration successful! Please log in.");
       setRegisterUsername("");
       setRegisterPassword("");
@@ -53,14 +49,10 @@ export function Auth() {
       formData.append('username', loginUsername);
       formData.append('password', loginPassword);
 
-      const response = await fetch("/api/auth/token", {
-        method: "POST",
+      const response = await api.post("/auth/token", formData, {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: formData,
       });
-      if (!response.ok) throw new Error("Login failed");
-      const data = await response.json();
-      login(data.access_token);
+      login(response.data.access_token);
       toast.success("Login successful!");
     } catch {
       toast.error("Incorrect username or password.");

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, FormEvent, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -29,17 +30,11 @@ export function AddNote() {
   const fetchNotes = useCallback(async () => {
     if (!token) return;
     try {
-      const response = await fetch("/api/notes", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) {
-        throw new Error("Failed to fetch notes");
-      }
-      const data: Note[] = await response.json();
-      setNotes(data);
+      const response = await api.get("/notes");
+      setNotes(response.data);
     } catch (error) {
+      // Error is already handled by the interceptor
       console.error(error);
-      toast.error("Failed to load notes.");
     }
   }, [token]);
 
@@ -63,20 +58,7 @@ export function AddNote() {
     }
 
     try {
-      const response = await fetch("/api/notes", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ text: newNoteText }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to create note");
-      }
-
-      // Reset input and refetch notes to show the new one
+      await api.post("/notes", { text: newNoteText });
       setNewNoteText("");
       toast.success("Note created successfully!");
       await fetchNotes(); // Refresh the list
@@ -95,23 +77,12 @@ export function AddNote() {
       return;
     }
     try {
-      const response = await fetch(`/api/notes/${noteId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to delete note");
-      }
-
-      // Optimistically update the UI by filtering out the deleted note
+      await api.delete(`/notes/${noteId}`);
       setNotes((prevNotes) => prevNotes.filter((note) => note.id !== noteId));
       toast.success("Note deleted successfully!");
     } catch (error) {
+      // Error is already handled by the interceptor
       console.error(error);
-      toast.error("Failed to delete note.");
     }
   };
 
