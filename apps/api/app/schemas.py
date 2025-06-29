@@ -22,8 +22,8 @@ class NoteCreate(SQLModel):
     tags: Optional[List[str]] = []
 
 class NoteUpdate(SQLModel):
-    text: str
-    translation: str | None = None
+    text: Optional[str] = None
+    translation: Optional[str] = None
     tags: Optional[List[str]] = None
 
 # --- User Schemas ---

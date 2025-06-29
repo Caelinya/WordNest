@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -10,9 +11,11 @@ import { Button } from "@/components/ui/button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { toast } from "sonner";
+import { TagBadge } from "../ui/TagBadge";
+import { TagInput } from "./TagInput";
+import { Trash2, Pencil, Save, X } from 'lucide-react';
 
-// --- TypeScript Interfaces to match backend's KnowledgeObject ---
-
+// --- Type Definitions ---
 interface Example {
   sentence: string;
   translation: string;
@@ -43,54 +46,101 @@ interface Note {
   tags: Tag[];
 }
 
-import { TagBadge } from "../ui/TagBadge";
-
 interface NoteItemProps {
   note: Note;
 }
 
+// --- Main Component ---
 export function NoteItem({ note }: NoteItemProps) {
   const queryClient = useQueryClient();
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentTags, setCurrentTags] = useState<string[]>([]);
 
-  // Mutation for DELETING a note (with optimistic update)
+  // --- Mutations ---
+
+  // Mutation for DELETING a note
   const deleteMutation = useMutation({
     mutationFn: (noteId: number) => api.delete(`/notes/${noteId}`),
-    onMutate: async (noteId: number) => {
-      await queryClient.cancelQueries({ queryKey: ["notes"] });
-      const previousNotes = queryClient.getQueryData<Note[]>(["notes"]);
-      queryClient.setQueryData<Note[]>(["notes"], (old) =>
-        old ? old.filter((n) => n.id !== noteId) : []
-      );
+    onSuccess: () => {
       toast.success("Note deleted.");
-      return { previousNotes };
-    },
-    onError: (err, noteId, context) => {
-      if (context?.previousNotes) {
-        queryClient.setQueryData(["notes"], context.previousNotes);
-        toast.error("Failed to delete note. Restoring...");
-      }
-    },
-    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
     },
+    onError: () => toast.error("Failed to delete note."),
   });
+
+  // Mutation for UPDATING tags
+  const updateTagsMutation = useMutation({
+    mutationFn: (newTags: string[]) =>
+      api.put(`/notes/${note.id}`, { tags: newTags }),
+    onSuccess: () => {
+      toast.success("Tags updated successfully!");
+      setIsEditing(false);
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+    },
+    onError: (error) => {
+      toast.error("Failed to update tags.");
+      console.error(error);
+    },
+  });
+
+  // --- Handlers ---
+
+  const handleEditClick = () => {
+    setCurrentTags(note.tags.map(tag => tag.name));
+    setIsEditing(true);
+  };
+
+  const handleCancelClick = () => {
+    setIsEditing(false);
+  };
+
+  const handleSaveClick = () => {
+    updateTagsMutation.mutate(currentTags);
+  };
+
+  // --- Render Logic ---
+
+  const renderTags = () => {
+    if (isEditing) {
+      return (
+        <div className="mt-2 space-y-2">
+            <TagInput tags={currentTags} setTags={setCurrentTags} placeholder="Add or remove tags..."/>
+        </div>
+      );
+    }
+
+    if (note.tags && note.tags.length > 0) {
+      return (
+        <div className="mt-2 flex flex-wrap items-center gap-2 group/tags">
+          {note.tags.map((tag) => (
+            <TagBadge key={tag.id} name={tag.name} color={tag.color} />
+          ))}
+           <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 transition-opacity group-hover/tags:opacity-100" onClick={handleEditClick}>
+                <Pencil className="h-4 w-4" />
+           </Button>
+        </div>
+      );
+    }
+    
+    // Render an edit button even if there are no tags
+    return (
+        <div className="mt-2">
+            <Button variant="outline" size="sm" onClick={handleEditClick}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Add Tags
+            </Button>
+        </div>
+    )
+  };
 
   return (
     <div className="group flex items-start justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50">
       <div className="flex-grow">
-        <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">{note.text}</h3>
-        </div>
+        <h3 className="text-lg font-semibold">{note.text}</h3>
+        
+        {renderTags()}
 
-        {note.tags && note.tags.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2">
-                {note.tags.map((tag) => (
-                    <TagBadge key={tag.id} name={tag.name} color={tag.color} />
-                ))}
-            </div>
-        )}
-
-        {note.translation ? (
+        {note.translation && (
           <Accordion type="single" collapsible className="w-full mt-2">
             {note.translation.definitions.map((def, index) => (
               <AccordionItem value={`item-${index}`} key={index}>
@@ -114,20 +164,32 @@ export function NoteItem({ note }: NoteItemProps) {
               </AccordionItem>
             ))}
           </Accordion>
-        ) : (
-          <p className="text-sm text-muted-foreground mt-1">No detailed analysis available.</p>
         )}
       </div>
-       <div className="ml-4 flex-shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => deleteMutation.mutate(note.id)}
-            aria-label="Delete note"
-            disabled={deleteMutation.isPending}
-          >
-             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-          </Button>
+
+       <div className="ml-4 flex-shrink-0">
+          {isEditing ? (
+            <div className="flex gap-2 opacity-100">
+                <Button variant="outline" size="icon" onClick={handleSaveClick} disabled={updateTagsMutation.isPending}>
+                    <Save className="h-4 w-4" />
+                </Button>
+                 <Button variant="ghost" size="icon" onClick={handleCancelClick}>
+                    <X className="h-4 w-4" />
+                </Button>
+            </div>
+          ) : (
+            <div className="opacity-0 transition-opacity group-hover:opacity-100">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => deleteMutation.mutate(note.id)}
+                    aria-label="Delete note"
+                    disabled={deleteMutation.isPending}
+                >
+                    <Trash2 className="h-4 w-4"/>
+                </Button>
+            </div>
+          )}
       </div>
     </div>
   );

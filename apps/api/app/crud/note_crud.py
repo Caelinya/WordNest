@@ -2,6 +2,7 @@ from sqlmodel import Session, select
 from sqlalchemy.orm import selectinload
 from ..models import Note, User
 from ..schemas import NoteUpdate
+from ..services import tag_service
 
 def get_note(*, session: Session, note_id: int) -> Note | None:
     """
@@ -30,6 +31,13 @@ def update_note_db(*, session: Session, db_note: Note, note_in: NoteUpdate) -> N
     Update an existing note in the database.
     """
     note_data = note_in.model_dump(exclude_unset=True)
+    
+    # Handle tags separately if they are provided
+    if "tags" in note_data:
+        tag_names = note_data.pop("tags")
+        tags = tag_service.get_or_create_tags_db(db=session, owner=db_note.owner, tag_names=tag_names)
+        db_note.tags = tags
+
     for key, value in note_data.items():
         setattr(db_note, key, value)
     
