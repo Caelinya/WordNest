@@ -16,11 +16,30 @@ import {
 } from "@/components/ui/card";
 import { toast } from "sonner";
 
-// Define the type for a single note
+// --- TypeScript Interfaces to match backend's KnowledgeObject ---
+
+interface Example {
+  sentence: string;
+  translation: string;
+}
+
+interface Definition {
+  part_of_speech: string;
+  translation: string;
+  explanation: string;
+  examples: Example[];
+}
+
+interface KnowledgeObject {
+  word: string;
+  phonetic: string | null;
+  definitions: Definition[];
+}
+
 interface Note {
   id: number;
   text: string;
-  translation: string | null;
+  translation: KnowledgeObject | null;
 }
 
 import { NoteItem } from "./NoteItem";

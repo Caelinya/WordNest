@@ -1,6 +1,7 @@
-from typing import Union
+from typing import Union, Any
 from pydantic import ConfigDict
-from sqlmodel import Field, SQLModel, Relationship
+from sqlmodel import Field, SQLModel, Relationship, Column
+from sqlalchemy.types import JSON
 
 class User(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
@@ -15,7 +16,7 @@ class User(SQLModel, table=True):
 class Note(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     text: str
-    translation: str | None = None
+    translation: dict[str, Any] | None = Field(default=None, sa_column=Column(JSON))
 
     owner_id: int | None = Field(default=None, foreign_key="user.id")
     owner: Union["User", None] = Relationship(back_populates="notes")

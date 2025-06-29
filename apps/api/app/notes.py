@@ -15,12 +15,17 @@ def get_session():
 
 @router.post("", response_model=Note)
 def create_note(note: NoteCreate, current_user: User = Depends(get_current_user), session: Session = Depends(get_session)):
-    translation = translation_service.translate_text(note.text)
+    # Call the translation service
+    translated_text = translation_service.translate_text(note.text)
+    
+    # Create the Note object with the translation
     db_note = Note(
         text=note.text,
-        translation=translation,
+        translation=translated_text,
         owner_id=current_user.id
     )
+    
+    # Save to the database using the CRUD function
     return note_crud.create_note_db(session=session, note=db_note)
 
 @router.get("", response_model=list[Note])
