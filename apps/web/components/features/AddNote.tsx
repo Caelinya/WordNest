@@ -3,6 +3,7 @@
 import { useState, FormEvent } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDisplayMode } from "@/contexts/DisplayModeContext";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,37 +17,7 @@ import {
 } from "@/components/ui/card";
 import { toast } from "sonner";
 
-// --- TypeScript Interfaces to match backend's KnowledgeObject ---
-
-interface Example {
-  sentence: string;
-  translation: string;
-}
-
-interface Definition {
-  part_of_speech: string;
-  translation: string;
-  explanation: string;
-  examples: Example[];
-}
-
-interface KnowledgeObject {
-  word: string;
-  definitions: Definition[];
-}
-
-interface Tag {
-  id: number;
-  name: string;
-  color: string;
-}
-
-interface Note {
-  id: number;
-  text: string;
-  translation: KnowledgeObject | null;
-  tags: Tag[];
-}
+import { Note } from "@/types/notes";
 
 import { NoteItem } from "./NoteItem";
 import { TagInput } from "./TagInput";
@@ -56,6 +27,7 @@ export function AddNote() {
   const [tags, setTags] = useState<string[]>([]);
   const { token } = useAuth();
   const queryClient = useQueryClient();
+  const { displayMode, toggleDisplayMode } = useDisplayMode();
 
   // 1. Fetching data with useQuery
   const { data: notes = [], isLoading: isLoadingNotes } = useQuery<Note[]>({
@@ -123,7 +95,12 @@ export function AddNote() {
           </form>
 
           <div className="mt-8">
-            <h3 className="text-lg font-semibold mb-4">Your Notes</h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Your Notes</h3>
+              <Button variant="outline" size="sm" onClick={toggleDisplayMode}>
+                {displayMode === 'full' ? 'English-Only' : 'Show All'}
+              </Button>
+            </div>
             <div className="space-y-2">
               {isLoadingNotes ? (
                 <p>Loading notes...</p>

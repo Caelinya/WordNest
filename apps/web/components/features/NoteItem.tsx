@@ -12,22 +12,8 @@ import { Trash2, Pencil, Save, X } from 'lucide-react';
 import { WordCard, WordAnalysis } from "./WordCard";
 import { PhraseCard, PhraseAnalysis } from "./PhraseCard";
 import { SentenceCard, SentenceAnalysis } from "./SentenceCard";
-
-// --- Type Definitions ---
-interface Tag {
-  id: number;
-  name: string;
-  color: string;
-}
-
-// This is the new, unified Note type that matches the backend.
-interface Note {
-  id: number;
-  text: string;
-  type: "word" | "phrase" | "sentence";
-  translation: WordAnalysis | PhraseAnalysis | SentenceAnalysis | null;
-  tags: Tag[];
-}
+import { Note } from "@/types/notes";
+import { useDisplayMode } from '@/contexts/DisplayModeContext';
 
 interface NoteItemProps {
   note: Note;
@@ -36,6 +22,7 @@ interface NoteItemProps {
 // --- Main Component ---
 export function NoteItem({ note }: NoteItemProps) {
   const queryClient = useQueryClient();
+  const { displayMode } = useDisplayMode();
   const [isEditing, setIsEditing] = useState(false);
   const [currentTags, setCurrentTags] = useState<string[]>([]);
 
@@ -156,7 +143,7 @@ export function NoteItem({ note }: NoteItemProps) {
         
         {renderTags()}
 
-        {renderCardContent()}
+        {displayMode === 'full' && renderCardContent()}
       </div>
 
        <div className="ml-4 flex-shrink-0">
