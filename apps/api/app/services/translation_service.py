@@ -38,7 +38,6 @@ class KnowledgeObject(BaseModel):
     This is the expected output format from the AI model.
     """
     word: str
-    phonetic: str | None
     definitions: List[Definition]
 
 # --- System Prompt ---
@@ -56,7 +55,7 @@ User input:
 "bank"
 
 Your output (raw JSON string):
-{"word":"bank","phonetic":"/bæŋk/","definitions":[{"part_of_speech":"noun","translation":"银行","explanation":"A financial establishment that invests money deposited by customers, pays it out when required, makes loans at interest, and exchanges currency.","examples":[{"sentence":"I need to go to the bank to deposit some money.","translation":"我需要去银行存点钱。"}]},{"part_of_speech":"noun","translation":"河岸","explanation":"The land alongside or sloping down to a river or lake.","examples":[{"sentence":"We sat on the grassy bank of the river.","translation":"我们坐在长满青草的河岸上。"}]}]}
+{"word":"bank","definitions":[{"part_of_speech":"noun","translation":"银行","explanation":"A financial establishment that invests money deposited by customers, pays it out when required, makes loans at interest, and exchanges currency.","examples":[{"sentence":"I need to go to the bank to deposit some money.","translation":"我需要去银行存点钱。"}]},{"part_of_speech":"noun","translation":"河岸","explanation":"The land alongside or sloping down to a river or lake.","examples":[{"sentence":"We sat on the grassy bank of the river.","translation":"我们坐在长满青草的河岸上。"}]}]}
 """
 
 def translate_text(text: str) -> dict | None:

@@ -32,7 +32,6 @@ interface Definition {
 
 interface KnowledgeObject {
   word: string;
-  phonetic: string | null;
   definitions: Definition[];
 }
 

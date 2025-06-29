@@ -27,7 +27,6 @@ interface Definition {
 
 interface KnowledgeObject {
   word: string;
-  phonetic: string | null;
   definitions: Definition[];
 }
 
@@ -71,12 +70,7 @@ export function NoteItem({ note }: NoteItemProps) {
     <div className="group flex items-start justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50">
       <div className="flex-grow">
         <div className="flex items-center justify-between">
-            <div className="flex items-baseline gap-4">
-                <h3 className="text-lg font-semibold">{note.text}</h3>
-                {note.translation?.phonetic && (
-                    <p className="text-sm text-muted-foreground">{note.translation.phonetic}</p>
-                )}
-            </div>
+            <h3 className="text-lg font-semibold">{note.text}</h3>
         </div>
 
         {note.translation ? (
