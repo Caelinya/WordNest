@@ -24,7 +24,7 @@ interface PhraseCardProps {
 // --- Component ---
 export function PhraseCard({ data }: PhraseCardProps) {
   return (
-    <Accordion type="single" collapsible className="w-full mt-2" defaultValue="item-0">
+    <Accordion type="single" collapsible className="w-full mt-2">
       <AccordionItem value="item-0">
         <AccordionTrigger>
           <p className="font-semibold text-sm">{data.translation}</p>
