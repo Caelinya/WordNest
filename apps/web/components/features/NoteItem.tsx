@@ -7,7 +7,7 @@ import api from "@/lib/api";
 import { toast } from "sonner";
 import { TagBadge } from "../ui/TagBadge";
 import { TagInput } from "./TagInput";
-import { Trash2, Pencil, Save, X, Tags } from 'lucide-react';
+import { Trash2, Save, X, Tags } from 'lucide-react';
 
 import { WordCard, WordAnalysis } from "./WordCard";
 import { PhraseCard, PhraseAnalysis } from "./PhraseCard";
