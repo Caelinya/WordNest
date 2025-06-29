@@ -100,7 +100,7 @@ export function AddNote() {
                 ))
               ) : (
                 <p className="text-muted-foreground">
-                  You haven't saved any notes yet.
+                  You haven&apos;t saved any notes yet.
                 </p>
               )}
             </div>
