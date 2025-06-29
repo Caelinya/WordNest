@@ -65,14 +65,48 @@ def delete_note(note_id: int, current_user: User = Depends(get_current_user), se
     return
 
 @router.put("/{note_id}", response_model=NoteRead)
-def update_note(note_id: int, note_update: NoteUpdate, current_user: User = Depends(get_current_user), session: Session = Depends(get_session)):
+def update_note(
+    note_id: int,
+    note_update: NoteUpdate,
+    re_analyze: bool = False,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
     db_note = note_crud.get_note(session=session, note_id=note_id)
     if not db_note:
         raise HTTPException(status_code=404, detail="Note not found")
     if db_note.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to edit this note")
 
-    updated_note = note_crud.update_note_db(session=session, db_note=db_note, note_in=note_update)
+    if re_analyze and note_update.text:
+        # AI-powered update: generate new analysis and text
+        ai_response = translation_service.translate_text(note_update.text)
+        
+        update_data = {
+            "text": note_update.text,
+            "type": "word",
+            "translation": None,
+            "corrected_text": note_update.text,
+            "tags": note_update.tags # Pass tags along
+        }
+        
+        if ai_response:
+            update_data["type"] = ai_response.get("type", "word")
+            update_data["translation"] = ai_response.get("data")
+            update_data["corrected_text"] = ai_response.get("corrected_text", note_update.text)
+            
+        # Create a NoteUpdate instance with all the new data
+        update_payload = NoteUpdate.model_validate(update_data)
+        updated_note = note_crud.update_note_db(session=session, db_note=db_note, note_in=update_payload)
+
+    else:
+        # Simple update: just save the text and tags from the request
+        updated_note = note_crud.update_note_db(session=session, db_note=db_note, note_in=note_update)
+        # Also sync the corrected_text to match the user's new raw text
+        if note_update.text is not None:
+            updated_note.corrected_text = updated_note.text
+
+
     session.commit()
     session.refresh(updated_note)
     return updated_note

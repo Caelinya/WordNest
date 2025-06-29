@@ -7,7 +7,7 @@ import api from "@/lib/api";
 import { toast } from "sonner";
 import { TagBadge } from "../ui/TagBadge";
 import { TagInput } from "./TagInput";
-import { Trash2, Save, X, Tags } from 'lucide-react';
+import { Trash2, Save, X, Tags, Pencil, BrainCircuit } from 'lucide-react';
 
 import { WordCard, WordAnalysis } from "./WordCard";
 import { PhraseCard, PhraseAnalysis } from "./PhraseCard";
@@ -25,6 +25,7 @@ export function NoteItem({ note }: NoteItemProps) {
   const { displayMode } = useDisplayMode();
   const [isEditing, setIsEditing] = useState(false);
   const [currentTags, setCurrentTags] = useState<string[]>([]);
+  const [editText, setEditText] = useState(note.text);
 
   // --- Mutations ---
 
@@ -38,17 +39,20 @@ export function NoteItem({ note }: NoteItemProps) {
     onError: () => toast.error("Failed to delete note."),
   });
 
-  // Mutation for UPDATING tags
-  const updateTagsMutation = useMutation({
-    mutationFn: (newTags: string[]) =>
-      api.put(`/notes/${note.id}`, { tags: newTags }),
+  // Mutation for UPDATING a note
+  const updateNoteMutation = useMutation({
+    mutationFn: (variables: { text: string; tags: string[]; reAnalyze: boolean }) =>
+      api.put(`/notes/${note.id}?re_analyze=${variables.reAnalyze}`, {
+        text: variables.text,
+        tags: variables.tags,
+      }),
     onSuccess: () => {
-      toast.success("Tags updated successfully!");
+      toast.success("Note updated successfully!");
       setIsEditing(false);
       queryClient.invalidateQueries({ queryKey: ["notes"] });
     },
     onError: (error) => {
-      toast.error("Failed to update tags.");
+      toast.error("Failed to update note.");
       console.error(error);
     },
   });
@@ -57,6 +61,7 @@ export function NoteItem({ note }: NoteItemProps) {
 
   const handleEditClick = () => {
     setCurrentTags(note.tags.map(tag => tag.name));
+    setEditText(note.corrected_text || note.text); // Use corrected text if available
     setIsEditing(true);
   };
 
@@ -64,8 +69,8 @@ export function NoteItem({ note }: NoteItemProps) {
     setIsEditing(false);
   };
 
-  const handleSaveClick = () => {
-    updateTagsMutation.mutate(currentTags);
+  const handleSaveClick = (reAnalyze = false) => {
+    updateNoteMutation.mutate({ text: editText, tags: currentTags, reAnalyze });
   };
 
   // --- Render Logic ---
@@ -101,7 +106,20 @@ export function NoteItem({ note }: NoteItemProps) {
       return (
         <div className="mt-2 space-y-2">
             <TagInput tags={currentTags} setTags={setCurrentTags} placeholder="Add or remove tags..."/>
-        </div>
+            <div className="mt-4 flex justify-end items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => handleSaveClick(false)} disabled={updateNoteMutation.isPending} className="flex items-center gap-2">
+                   <Save className="h-4 w-4" />
+                   <span>Save</span>
+               </Button>
+                <Button variant="outline" size="sm" onClick={() => handleSaveClick(true)} disabled={updateNoteMutation.isPending} className="flex items-center gap-2">
+                   <BrainCircuit className="h-4 w-4" />
+                   <span>Save & Update</span>
+               </Button>
+                <Button variant="ghost" size="icon" onClick={handleCancelClick}>
+                   <X className="h-4 w-4" />
+               </Button>
+           </div>
+       </div>
       );
     }
 
@@ -123,7 +141,16 @@ export function NoteItem({ note }: NoteItemProps) {
     <div className="group flex items-start justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50">
       <div className="flex-grow">
         <div className="flex items-center gap-3">
-          <h3 className="text-lg font-semibold">{note.corrected_text || note.text}</h3>
+          {isEditing ? (
+            <textarea
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              className="w-full p-2 text-lg font-semibold bg-transparent border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+              rows={3}
+            />
+          ) : (
+            <h3 className="text-lg font-semibold">{note.corrected_text || note.text}</h3>
+          )}
           {note.type === 'word' && note.translation && (note.translation as WordAnalysis).phonetic && (
             <span className="text-sm text-muted-foreground font-sans">
               [{(note.translation as WordAnalysis).phonetic}]
@@ -137,19 +164,10 @@ export function NoteItem({ note }: NoteItemProps) {
       </div>
 
        <div className="ml-4 flex-shrink-0">
-          {isEditing ? (
-            <div className="flex gap-2 opacity-100">
-                <Button variant="outline" size="icon" onClick={handleSaveClick} disabled={updateTagsMutation.isPending}>
-                    <Save className="h-4 w-4" />
-                </Button>
-                 <Button variant="ghost" size="icon" onClick={handleCancelClick}>
-                    <X className="h-4 w-4" />
-                </Button>
-            </div>
-          ) : (
+          {!isEditing && (
             <div className="flex items-center opacity-0 transition-opacity group-hover:opacity-100">
-                <Button variant="ghost" size="icon" onClick={handleEditClick} aria-label="Edit tags">
-                    <Tags className="h-4 w-4" />
+                <Button variant="ghost" size="icon" onClick={handleEditClick} aria-label="Edit note">
+                    <Pencil className="h-4 w-4" />
                 </Button>
                 <Button
                     variant="ghost"

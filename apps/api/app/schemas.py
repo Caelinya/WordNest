@@ -25,8 +25,10 @@ class NoteCreate(SQLModel):
 
 class NoteUpdate(SQLModel):
     text: Optional[str] = None
-    translation: Optional[str] = None
+    type: Optional[str] = None
+    translation: Optional[dict] = None
     tags: Optional[List[str]] = None
+    corrected_text: Optional[str] = None
 
 # --- User Schemas ---
 
