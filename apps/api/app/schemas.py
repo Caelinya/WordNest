@@ -1,11 +1,30 @@
 from sqlmodel import SQLModel
+from typing import List, Optional
+
+# --- Tag Schemas ---
+
+class TagRead(SQLModel):
+    id: int
+    name: str
+    color: str
+
+class NoteRead(SQLModel):
+    id: int
+    text: str
+    translation: Optional[dict] = None
+    tags: List[TagRead] = []
+
+
+# --- Note Schemas ---
 
 class NoteCreate(SQLModel):
     text: str
+    tags: Optional[List[str]] = []
 
 class NoteUpdate(SQLModel):
     text: str
     translation: str | None = None
+    tags: Optional[List[str]] = None
 
 # --- User Schemas ---
 

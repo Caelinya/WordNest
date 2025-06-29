@@ -35,16 +35,25 @@ interface KnowledgeObject {
   definitions: Definition[];
 }
 
+interface Tag {
+  id: number;
+  name: string;
+  color: string;
+}
+
 interface Note {
   id: number;
   text: string;
   translation: KnowledgeObject | null;
+  tags: Tag[];
 }
 
 import { NoteItem } from "./NoteItem";
+import { TagInput } from "./TagInput";
 
 export function AddNote() {
   const [newNoteText, setNewNoteText] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
   const { token } = useAuth();
   const queryClient = useQueryClient();
 
@@ -60,11 +69,12 @@ export function AddNote() {
 
   // 2. Creating data with useMutation
   const createNoteMutation = useMutation({
-    mutationFn: (newNoteText: string) =>
-      api.post("/notes", { text: newNoteText }),
+    mutationFn: (data: { text: string; tags: string[] }) =>
+      api.post("/notes", data),
     onSuccess: () => {
       toast.success("Note created successfully!");
       setNewNoteText("");
+      setTags([]);
       // 3. Invalidate the 'notes' query to refetch the list automatically
       queryClient.invalidateQueries({ queryKey: ["notes"] });
     },
@@ -81,7 +91,7 @@ export function AddNote() {
       toast.warning("Note cannot be empty.");
       return;
     }
-    createNoteMutation.mutate(newNoteText);
+    createNoteMutation.mutate({ text: newNoteText, tags });
   };
 
   return (
@@ -94,7 +104,7 @@ export function AddNote() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleCreateNote} className="flex gap-4">
+          <form onSubmit={handleCreateNote} className="space-y-4">
             <Input
               type="text"
               placeholder="e.g., Ubiquitous"
@@ -102,7 +112,12 @@ export function AddNote() {
               onChange={(e) => setNewNoteText(e.target.value)}
               disabled={createNoteMutation.isPending}
             />
-            <Button type="submit" disabled={createNoteMutation.isPending}>
+            <TagInput
+                tags={tags}
+                setTags={setTags}
+                placeholder="Add tags (e.g., GRE, Work)..."
+            />
+            <Button type="submit" disabled={createNoteMutation.isPending} className="w-full">
               {createNoteMutation.isPending ? "Saving..." : "Save Note"}
             </Button>
           </form>

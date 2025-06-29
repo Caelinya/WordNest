@@ -30,11 +30,20 @@ interface KnowledgeObject {
   definitions: Definition[];
 }
 
+interface Tag {
+  id: number;
+  name: string;
+  color: string;
+}
+
 interface Note {
   id: number;
   text: string;
   translation: KnowledgeObject | null;
+  tags: Tag[];
 }
+
+import { TagBadge } from "../ui/TagBadge";
 
 interface NoteItemProps {
   note: Note;
@@ -72,6 +81,14 @@ export function NoteItem({ note }: NoteItemProps) {
         <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">{note.text}</h3>
         </div>
+
+        {note.tags && note.tags.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+                {note.tags.map((tag) => (
+                    <TagBadge key={tag.id} name={tag.name} color={tag.color} />
+                ))}
+            </div>
+        )}
 
         {note.translation ? (
           <Accordion type="single" collapsible className="w-full mt-2">

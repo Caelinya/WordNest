@@ -3,8 +3,8 @@ from sqlmodel import Session
 from .db import engine
 from .models import Note, User
 from .auth import get_current_user
-from .services import translation_service
-from .schemas import NoteCreate, NoteUpdate
+from .services import translation_service, tag_service
+from .schemas import NoteCreate, NoteUpdate, NoteRead
 from .crud import note_crud
 
 router = APIRouter()
@@ -13,24 +13,33 @@ def get_session():
     with Session(engine) as session:
         yield session
 
-@router.post("", response_model=Note)
+@router.post("", response_model=NoteRead)
 def create_note(note: NoteCreate, current_user: User = Depends(get_current_user), session: Session = Depends(get_session)):
     # Call the translation service
     translated_text = translation_service.translate_text(note.text)
+
+    # Get or create tags
+    tags = tag_service.get_or_create_tags_db(db=session, owner=current_user, tag_names=note.tags)
     
-    # Create the Note object with the translation
+    # Create the Note object with the translation and tags
     db_note = Note(
         text=note.text,
         translation=translated_text,
-        owner_id=current_user.id
+        owner_id=current_user.id,
+        tags=tags
     )
     
     # Save to the database using the CRUD function
-    return note_crud.create_note_db(session=session, note=db_note)
+    created_note = note_crud.create_note_db(session=session, note=db_note)
+    session.commit()
+    session.refresh(created_note)
+    
+    return created_note
 
-@router.get("", response_model=list[Note])
+@router.get("", response_model=list[NoteRead])
 def read_notes(current_user: User = Depends(get_current_user), session: Session = Depends(get_session)):
-    return note_crud.get_notes_by_owner(session=session, owner_id=current_user.id)
+    notes = note_crud.get_notes_by_owner(session=session, owner_id=current_user.id)
+    return notes
 
 @router.delete("/{note_id}", status_code=204)
 def delete_note(note_id: int, current_user: User = Depends(get_current_user), session: Session = Depends(get_session)):
@@ -41,9 +50,10 @@ def delete_note(note_id: int, current_user: User = Depends(get_current_user), se
         raise HTTPException(status_code=403, detail="Not authorized to delete this note")
     
     note_crud.delete_note_db(session=session, note=note)
+    session.commit()
     return
 
-@router.put("/{note_id}", response_model=Note)
+@router.put("/{note_id}", response_model=NoteRead)
 def update_note(note_id: int, note_update: NoteUpdate, current_user: User = Depends(get_current_user), session: Session = Depends(get_session)):
     db_note = note_crud.get_note(session=session, note_id=note_id)
     if not db_note:
@@ -51,4 +61,7 @@ def update_note(note_id: int, note_update: NoteUpdate, current_user: User = Depe
     if db_note.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to edit this note")
 
-    return note_crud.update_note_db(session=session, db_note=db_note, note_in=note_update)
+    updated_note = note_crud.update_note_db(session=session, db_note=db_note, note_in=note_update)
+    session.commit()
+    session.refresh(updated_note)
+    return updated_note
