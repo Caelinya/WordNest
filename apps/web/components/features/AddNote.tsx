@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, FormEvent } from "react";
+import { useState, useEffect, FormEvent, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,8 +26,7 @@ export function AddNote() {
   const [isLoading, setIsLoading] = useState(false);
   const { token } = useAuth();
 
-  // Function to fetch all notes from the API
-  const fetchNotes = async () => {
+  const fetchNotes = useCallback(async () => {
     if (!token) return;
     try {
       const response = await fetch("/api/notes", {
@@ -42,12 +41,12 @@ export function AddNote() {
       console.error(error);
       toast.error("Failed to load notes.");
     }
-  };
+  }, [token]);
 
-  // Fetch notes when the component mounts
+  // Fetch notes when the component mounts or token changes
   useEffect(() => {
     fetchNotes();
-  }, []);
+  }, [fetchNotes]);
 
   // Handler for form submission to create a new note
   const handleCreateNote = async (e: FormEvent) => {

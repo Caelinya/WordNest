@@ -38,7 +38,7 @@ export function Auth() {
       toast.success("Registration successful! Please log in.");
       setRegisterUsername("");
       setRegisterPassword("");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Registration failed.");
     } finally {
       setIsLoading(false);
@@ -62,7 +62,7 @@ export function Auth() {
       const data = await response.json();
       login(data.access_token);
       toast.success("Login successful!");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Incorrect username or password.");
     } finally {
       setIsLoading(false);
