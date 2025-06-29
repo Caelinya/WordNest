@@ -28,6 +28,10 @@ def _extract_text_from_pptx(file_stream: io.BytesIO) -> str:
                 text += shape.text + "\n"
     return text
 
+def _extract_text_from_txt(file_stream: io.BytesIO) -> str:
+    """Extracts text from a TXT or MD file stream."""
+    return file_stream.getvalue().decode("utf-8")
+
 async def extract_text_from_file(file: UploadFile) -> str:
     """
     Reads an uploaded file and dispatches to the correct text extraction function
@@ -42,6 +46,8 @@ async def extract_text_from_file(file: UploadFile) -> str:
         return _extract_text_from_docx(file_stream)
     elif filename.endswith(".pptx"):
         return _extract_text_from_pptx(file_stream)
+    elif filename.endswith((".txt", ".md")):
+        return _extract_text_from_txt(file_stream)
     else:
         raise HTTPException(status_code=400, detail=f"Unsupported file type: {file.filename}")
 

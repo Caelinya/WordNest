@@ -60,10 +60,10 @@ export function ImportButton() {
         ref={fileInputRef}
         onChange={handleFileChange}
         className="hidden"
-        accept=".pdf,.docx,.pptx"
+        accept=".pdf,.docx,.pptx,.txt,.md"
         disabled={isLoading}
       />
-      <Button onClick={handleButtonClick} disabled={isLoading} variant="outline" size="sm">
+      <Button type="button" onClick={handleButtonClick} disabled={isLoading} variant="outline" size="sm">
         <Upload className="mr-2 h-4 w-4" />
         {isLoading ? 'Analyzing...' : 'Import Document'}
       </Button>
