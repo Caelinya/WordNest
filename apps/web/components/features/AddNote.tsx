@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, FormEvent } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -23,11 +24,15 @@ export function AddNote() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [newNoteText, setNewNoteText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { token } = useAuth();
 
   // Function to fetch all notes from the API
   const fetchNotes = async () => {
+    if (!token) return;
     try {
-      const response = await fetch("/api/notes");
+      const response = await fetch("/api/notes", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!response.ok) {
         throw new Error("Failed to fetch notes");
       }
@@ -52,12 +57,18 @@ export function AddNote() {
       return;
     }
     setIsLoading(true);
+    if (!token) {
+      toast.error("You must be logged in to create a note.");
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const response = await fetch("/api/notes", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ text: newNoteText }),
       });
@@ -80,9 +91,16 @@ export function AddNote() {
 
   // Handler for deleting a note
   const handleDeleteNote = async (noteId: number) => {
+    if (!token) {
+      toast.error("You must be logged in to delete a note.");
+      return;
+    }
     try {
       const response = await fetch(`/api/notes/${noteId}`, {
         method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {
