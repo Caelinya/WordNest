@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, FormEvent, useCallback } from "react";
+import { useState, FormEvent } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -25,68 +26,44 @@ interface Note {
 import { NoteItem } from "./NoteItem";
 
 export function AddNote() {
-  const [notes, setNotes] = useState<Note[]>([]);
   const [newNoteText, setNewNoteText] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const { token } = useAuth();
+  const queryClient = useQueryClient();
 
-  const fetchNotes = useCallback(async () => {
-    if (!token) return;
-    try {
+  // 1. Fetching data with useQuery
+  const { data: notes = [], isLoading: isLoadingNotes } = useQuery<Note[]>({
+    queryKey: ["notes"],
+    queryFn: async () => {
       const response = await api.get("/notes");
-      setNotes(response.data);
-    } catch (error) {
-      // Error is already handled by the interceptor
+      return response.data;
+    },
+    enabled: !!token, // Only run the query if the user is authenticated
+  });
+
+  // 2. Creating data with useMutation
+  const createNoteMutation = useMutation({
+    mutationFn: (newNoteText: string) =>
+      api.post("/notes", { text: newNoteText }),
+    onSuccess: () => {
+      toast.success("Note created successfully!");
+      setNewNoteText("");
+      // 3. Invalidate the 'notes' query to refetch the list automatically
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+    },
+    onError: (error) => {
       console.error(error);
-    }
-  }, [token]);
+      // Global error handler in api.ts will show the toast
+    },
+  });
 
-  // Fetch notes when the component mounts or token changes
-  useEffect(() => {
-    fetchNotes();
-  }, [fetchNotes]);
-
-  // Handler for form submission to create a new note
-  const handleCreateNote = async (e: FormEvent) => {
+  // Handler for form submission
+  const handleCreateNote = (e: FormEvent) => {
     e.preventDefault();
     if (!newNoteText.trim()) {
       toast.warning("Note cannot be empty.");
       return;
     }
-    setIsLoading(true);
-    if (!token) {
-      toast.error("You must be logged in to create a note.");
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      await api.post("/notes", { text: newNoteText });
-      setNewNoteText("");
-      toast.success("Note created successfully!");
-      await fetchNotes(); // Refresh the list
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to create note.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Handler for deleting a note
-  const handleDeleteNote = async (noteId: number) => {
-    if (!token) {
-      toast.error("You must be logged in to delete a note.");
-      return;
-    }
-    try {
-      await api.delete(`/notes/${noteId}`);
-      setNotes((prevNotes) => prevNotes.filter((note) => note.id !== noteId));
-      toast.success("Note deleted successfully!");
-    } catch (error) {
-      // Error is already handled by the interceptor
-      console.error(error);
-    }
+    createNoteMutation.mutate(newNoteText);
   };
 
   return (
@@ -105,34 +82,25 @@ export function AddNote() {
               placeholder="e.g., Ubiquitous"
               value={newNoteText}
               onChange={(e) => setNewNoteText(e.target.value)}
-              disabled={isLoading}
+              disabled={createNoteMutation.isPending}
             />
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Saving..." : "Save Note"}
+            <Button type="submit" disabled={createNoteMutation.isPending}>
+              {createNoteMutation.isPending ? "Saving..." : "Save Note"}
             </Button>
           </form>
 
           <div className="mt-8">
             <h3 className="text-lg font-semibold mb-4">Your Notes</h3>
             <div className="space-y-2">
-              {notes.length > 0 ? (
+              {isLoadingNotes ? (
+                <p>Loading notes...</p>
+              ) : notes.length > 0 ? (
                 notes.map((note) => (
-                  <NoteItem
-                    key={note.id}
-                    note={note}
-                    onDelete={handleDeleteNote}
-                    onUpdate={(updatedNote) => {
-                      setNotes((prevNotes) =>
-                        prevNotes.map((n) =>
-                          n.id === updatedNote.id ? updatedNote : n
-                        )
-                      );
-                    }}
-                  />
+                  <NoteItem key={note.id} note={note} />
                 ))
               ) : (
                 <p className="text-muted-foreground">
-                  You haven&apos;t saved any notes yet.
+                  You haven't saved any notes yet.
                 </p>
               )}
             </div>
