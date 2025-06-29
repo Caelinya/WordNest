@@ -1,4 +1,5 @@
 from typing import List
+from sqlalchemy import func
 from sqlmodel import Session, select
 from ..models import Tag, User
 from .color_service import generate_color_from_string
@@ -31,7 +32,7 @@ def get_or_create_tags_db(db: Session, owner: User, tag_names: List[str]) -> Lis
     lower_to_original_map = {name.lower(): name for name in tag_names}
     
     # Fetch all existing tags for the user that match the given names in a single query.
-    statement = select(Tag).where(Tag.owner_id == owner.id).where(Tag.name.in_(lower_to_original_map.keys()))
+    statement = select(Tag).where(Tag.owner_id == owner.id).where(func.lower(Tag.name).in_(lower_tag_names))
     existing_tags = db.exec(statement).all()
     
     existing_tags_map = {tag.name.lower(): tag for tag in existing_tags}
@@ -48,12 +49,15 @@ def get_or_create_tags_db(db: Session, owner: User, tag_names: List[str]) -> Lis
             new_color = generate_color_from_string(name)
             new_tag = Tag(name=name, color=new_color, owner_id=owner.id)
             db.add(new_tag)
-            # We use flush to assign a temporary ID to new_tag within the current
-            # transaction, so it can be added to the session without a full commit.
-            db.flush()
-            db.refresh(new_tag)
             tags_to_return.append(new_tag)
             # Add to map to handle potential duplicates in the input list
             existing_tags_map[lower_name] = new_tag
+    # We flush here once after adding all new tags.
+    db.flush()
+    
+    # Refresh each new tag to get its ID, etc.
+    for tag in tags_to_return:
+        if not tag.id: # Or some other attribute that indicates it's new
+            db.refresh(tag)
             
     return tags_to_return

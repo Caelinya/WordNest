@@ -7,7 +7,7 @@ import api from "@/lib/api";
 import { toast } from "sonner";
 import { TagBadge } from "../ui/TagBadge";
 import { TagInput } from "./TagInput";
-import { Trash2, Pencil, Save, X } from 'lucide-react';
+import { Trash2, Pencil, Save, X, Tags } from 'lucide-react';
 
 import { WordCard, WordAnalysis } from "./WordCard";
 import { PhraseCard, PhraseAnalysis } from "./PhraseCard";
@@ -111,22 +111,12 @@ export function NoteItem({ note }: NoteItemProps) {
           {note.tags.map((tag) => (
             <TagBadge key={tag.id} name={tag.name} color={tag.color} />
           ))}
-           <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 transition-opacity group-hover/tags:opacity-100" onClick={handleEditClick}>
-                <Pencil className="h-4 w-4" />
-           </Button>
         </div>
       );
     }
     
     // Render an edit button even if there are no tags
-    return (
-        <div className="mt-2">
-            <Button variant="outline" size="sm" onClick={handleEditClick}>
-                <Pencil className="h-4 w-4 mr-2" />
-                Add Tags
-            </Button>
-        </div>
-    )
+    return null;
   };
 
   return (
@@ -157,7 +147,10 @@ export function NoteItem({ note }: NoteItemProps) {
                 </Button>
             </div>
           ) : (
-            <div className="opacity-0 transition-opacity group-hover:opacity-100">
+            <div className="flex items-center opacity-0 transition-opacity group-hover:opacity-100">
+                <Button variant="ghost" size="icon" onClick={handleEditClick} aria-label="Edit tags">
+                    <Tags className="h-4 w-4" />
+                </Button>
                 <Button
                     variant="ghost"
                     size="icon"
