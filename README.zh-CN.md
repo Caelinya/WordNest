@@ -82,15 +82,15 @@ WordNest 采用现代化的技术栈，前后端分离，并通过 Docker 实现
 ```mermaid
 graph TD
     subgraph "用户设备"
-        A[浏览器]
+        A["浏览器"]
     end
     subgraph "自托管服务器 (通过 Docker Compose)"
-        B[Web 前端 (Next.js)]
-        C[API 后端 (FastAPI)]
-        D[数据库 (SQLite / PostgreSQL)]
+        B["Web 前端 (Next.js)"]
+        C["API 后端 (FastAPI)"]
+        D["数据库 (SQLite / PostgreSQL)"]
     end
     subgraph "外部 AI 服务"
-        E[OpenAI / Groq / ... 等]
+        E["OpenAI / Groq / ... 等"]
     end
 
     A -- "HTTPS" --> B

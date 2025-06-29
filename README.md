@@ -82,15 +82,15 @@ WordNest uses a modern tech stack with a decoupled front-end and back-end, conta
 ```mermaid
 graph TD
     subgraph "User's Device"
-        A[Browser]
+        A["Browser"]
     end
     subgraph "Self-Hosted Server (via Docker Compose)"
-        B[Web Frontend (Next.js)]
-        C[API Backend (FastAPI)]
-        D[Database (SQLite / PostgreSQL)]
+        B["Web Frontend (Next.js)"]
+        C["API Backend (FastAPI)"]
+        D["Database (SQLite / PostgreSQL)"]
     end
     subgraph "External AI Services"
-        E[OpenAI / Groq / etc.]
+        E["OpenAI / Groq / etc."]
     end
 
     A -- "HTTPS" --> B
