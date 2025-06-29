@@ -1,28 +1,8 @@
-import os
 from pydantic import BaseModel
-from openai import OpenAI
-from typing import List
-from dotenv import load_dotenv
-import json
-
-load_dotenv()
-
-# --- Configuration ---
-API_KEY = os.getenv("API_KEY")
-BASE_URL = os.getenv("BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/")
-
-if not API_KEY:
-    print("Warning: API_KEY is not set. Translation service will be disabled.")
-    client = None
-else:
-    client = OpenAI(
-        api_key=API_KEY,
-        base_url=BASE_URL,
-    )
+from typing import List, Union, Literal, Optional
+from . import ai_service
 
 # --- Pydantic Models for Structured AI Output ---
-
-from typing import List, Union, Literal, Optional
 
 class Example(BaseModel):
     sentence: str
@@ -141,30 +121,19 @@ def translate_text(text: str) -> dict | None:
     The returned dictionary will have 'type' and 'data' keys.
     Returns None if the service is disabled or fails.
     """
-    if not client:
+    json_response = ai_service.call_ai(
+        system_prompt=SYSTEM_PROMPT,
+        user_prompt=text
+    )
+
+    if not json_response:
         return None
 
     try:
-        completion = client.chat.completions.create(
-            model="gemini-2.0-flash",
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": text},
-            ],
-            response_format={"type": "json_object"},
-        )
-        
-        raw_json_response = completion.choices[0].message.content
-        if not raw_json_response:
-            return None
-
-        # Use the new AIResponse model for validation
-        ai_response = AIResponse.model_validate_json(raw_json_response)
-        
+        # Use the AIResponse model for validation
+        ai_response_obj = AIResponse.model_validate(json_response)
         # Return the full validated object as a dict
-        # It will be in the format: {'type': '...', 'data': {...}}
-        return ai_response.model_dump()
-
+        return ai_response_obj.model_dump()
     except Exception as e:
-        print(f"An error occurred during translation: {e}")
+        print(f"Failed to validate AI response: {e}")
         return None

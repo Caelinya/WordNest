@@ -21,6 +21,7 @@ import { Note } from "@/types/notes";
 
 import { NoteItem } from "./NoteItem";
 import { TagInput } from "./TagInput";
+import { ImportButton } from "./ImportButton";
 
 export function AddNote() {
   const [newNoteText, setNewNoteText] = useState("");
@@ -95,9 +96,12 @@ export function AddNote() {
                 setTags={setTags}
                 placeholder="Add tags (e.g., GRE, Work)..."
             />
-            <Button type="submit" disabled={createNoteMutation.isPending} className="w-full">
-              {createNoteMutation.isPending ? "Saving..." : "Save Note"}
-            </Button>
+            <div className="flex items-center gap-2">
+                <Button type="submit" disabled={createNoteMutation.isPending} className="flex-grow">
+                  {createNoteMutation.isPending ? "Saving..." : "Save Note"}
+                </Button>
+                <ImportButton />
+            </div>
           </form>
 
           <div className="mt-8">

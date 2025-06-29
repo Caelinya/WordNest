@@ -7,3 +7,7 @@ python-multipart
 python-dotenv
 openai
 alembic
+python-multipart
+PyMuPDF
+python-docx
+python-pptx

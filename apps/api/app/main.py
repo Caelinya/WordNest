@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
-from . import auth, notes
+from . import auth, notes, parser
 from .db import engine
 from .models import SQLModel
 
@@ -18,6 +18,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(notes.router, prefix="/notes", tags=["notes"])
+app.include_router(parser.router, prefix="/parser", tags=["parser"])
 
 @app.get("/")
 def read_root():
