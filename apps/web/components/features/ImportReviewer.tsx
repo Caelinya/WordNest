@@ -73,7 +73,7 @@ export function ImportReviewer({ items, open, onOpenChange }: ImportReviewerProp
         <DialogHeader>
           <DialogTitle>Review and Import</DialogTitle>
           <DialogDescription>
-            Select the items you want to add to your collection. Uncheck any you don't need.
+            Select the items you want to add to your collection. Uncheck any you don&apos;t need.
           </DialogDescription>
         </DialogHeader>
         <div className="flex items-center space-x-2 mb-4 border-b pb-4">
