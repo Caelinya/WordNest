@@ -10,9 +10,15 @@ from .models import User, Note
 # Security utilities
 import bcrypt
 from jose import jwt, JWTError
+import os
+from dotenv import load_dotenv
+
+load_dotenv() # Load environment variables from .env file
 
 # --- Configuration ---
-SECRET_KEY = "your-super-secret-key"  # Replace with a value from .env in production
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("No SECRET_KEY set for JWT")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
