@@ -15,6 +15,7 @@ class User(SQLModel, table=True):
 class Note(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     text: str
+    translation: str | None = None
 
     owner_id: int | None = Field(default=None, foreign_key="user.id")
     owner: Union["User", None] = Relationship(back_populates="notes")

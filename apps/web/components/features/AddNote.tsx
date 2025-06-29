@@ -19,7 +19,10 @@ import { toast } from "sonner";
 interface Note {
   id: number;
   text: string;
+  translation: string | null;
 }
+
+import { NoteItem } from "./NoteItem";
 
 export function AddNote() {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -114,35 +117,18 @@ export function AddNote() {
             <div className="space-y-2">
               {notes.length > 0 ? (
                 notes.map((note) => (
-                  <div
+                  <NoteItem
                     key={note.id}
-                    className="group flex items-center justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50"
-                  >
-                    <p className="flex-grow">{note.text}</p>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteNote(note.id)}
-                      aria-label="Delete note"
-                      className="ml-4 flex-shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-4 w-4"
-                      >
-                        <path d="M3 6h18" />
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                      </svg>
-                    </Button>
-                  </div>
+                    note={note}
+                    onDelete={handleDeleteNote}
+                    onUpdate={(updatedNote) => {
+                      setNotes((prevNotes) =>
+                        prevNotes.map((n) =>
+                          n.id === updatedNote.id ? updatedNote : n
+                        )
+                      );
+                    }}
+                  />
                 ))
               ) : (
                 <p className="text-muted-foreground">
