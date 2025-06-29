@@ -20,7 +20,9 @@ else:
         base_url=BASE_URL,
     )
 
-# --- Pydantic Models for Structured Output ---
+# --- Pydantic Models for Structured AI Output ---
+
+from typing import List, Union, Literal, Optional
 
 class Example(BaseModel):
     sentence: str
@@ -32,49 +34,118 @@ class Definition(BaseModel):
     explanation: str
     examples: List[Example]
 
-class KnowledgeObject(BaseModel):
-    """
-    A structured object containing detailed information about a word or phrase.
-    This is the expected output format from the AI model.
-    """
-    word: str
+class WordAnalysis(BaseModel):
+    phonetic: Optional[str] = None
     definitions: List[Definition]
+
+class PhraseAnalysis(BaseModel):
+    explanation: str
+    translation: str
+    examples: List[Example]
+
+class SentenceAnalysis(BaseModel):
+    translation: str
+    keywords: List[str]
+    grammar_analysis: str
+
+class AIResponse(BaseModel):
+    type: Literal["word", "phrase", "sentence"]
+    data: Union[WordAnalysis, PhraseAnalysis, SentenceAnalysis]
 
 # --- System Prompt ---
 SYSTEM_PROMPT = """
-You are a professional dictionary compiler. Your task is to analyze a word or phrase and provide a detailed, structured analysis in JSON format.
+You are an expert linguist and AI assistant. Your task is to analyze a given text and classify it as a single 'word', a 'phrase', or a 'sentence'. Then, you must provide a detailed, structured analysis in a specific JSON format.
 
-**Output Requirements:**
-- You MUST respond with ONLY a raw JSON string that conforms to the 'KnowledgeObject' schema. Do not add any extra text, explanations, or markdown formatting like ```json.
-- For each meaning (definition), provide the part of speech, translation, a brief explanation, and at least one example sentence with its translation.
-- If the word has multiple distinct meanings, provide a separate definition object for each.
+**Overall JSON Output Structure:**
+- You MUST respond with ONLY a raw JSON string. Do not add any extra text, explanations, or markdown formatting like ```json.
+- The root of the JSON object must have two keys: "type" and "data".
+- The "type" key's value must be one of three strings: "word", "phrase", or "sentence".
+- The structure of the "data" key's value depends on the "type".
 
-**Example:**
+---
 
-User input:
-"bank"
+**1. If the input is a 'word':**
+The "data" object must contain "phonetic" (optional) and "definitions".
 
-Your output (raw JSON string):
-{"word":"bank","definitions":[{"part_of_speech":"noun","translation":"银行","explanation":"A financial establishment that invests money deposited by customers, pays it out when required, makes loans at interest, and exchanges currency.","examples":[{"sentence":"I need to go to the bank to deposit some money.","translation":"我需要去银行存点钱。"}]},{"part_of_speech":"noun","translation":"河岸","explanation":"The land alongside or sloping down to a river or lake.","examples":[{"sentence":"We sat on the grassy bank of the river.","translation":"我们坐在长满青草的河岸上。"}]}]}
+**JSON Structure for 'word':**
+```json
+{
+  "type": "word",
+  "data": {
+    "phonetic": "/rɪˈzɪliəns/",
+    "definitions": [
+      {
+        "part_of_speech": "noun",
+        "translation": "韧性; 恢复力",
+        "explanation": "The capacity to recover quickly from difficulties; toughness.",
+        "examples": [
+          {
+            "sentence": "The resilience of the economy has been remarkable.",
+            "translation": "经济的恢复力非常惊人。"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+---
+
+**2. If the input is a 'phrase':**
+The "data" object must contain "explanation", "translation", and "examples".
+
+**JSON Structure for 'phrase':**
+```json
+{
+  "type": "phrase",
+  "data": {
+    "explanation": "To be alert, quick to understand, and competent.",
+    "translation": "反应快; 精明能干",
+    "examples": [
+      {
+        "sentence": "Our new project manager is really on the ball.",
+        "translation": "我们的新项目经理确实非常精明能干。"
+      }
+    ]
+  }
+}
+```
+
+---
+
+**3. If the input is a 'sentence':**
+The "data" object must contain "translation", "keywords", and "grammar_analysis".
+
+**JSON Structure for 'sentence':**
+```json
+{
+  "type": "sentence",
+  "data": {
+    "translation": "这只敏捷的棕色狐狸跳过了那只懒狗。",
+    "keywords": ["quick", "brown", "fox", "jumps", "lazy", "dog"],
+    "grammar_analysis": "This is a simple declarative sentence. 'The quick brown fox' is the subject, 'jumps' is the main verb (present simple tense), and 'over the lazy dog' is a prepositional phrase acting as an adverbial, modifying the verb."
+  }
+}
+```
 """
 
 def translate_text(text: str) -> dict | None:
     """
-    Analyzes the given text and returns a structured KnowledgeObject.
-    Returns the analysis as a dictionary or None if the service is disabled or fails.
+    Analyzes the given text, classifies it, and returns a structured analysis.
+    The returned dictionary will have 'type' and 'data' keys.
+    Returns None if the service is disabled or fails.
     """
     if not client:
         return None
 
     try:
-        # Ask the model to return a JSON string, then parse it manually
         completion = client.chat.completions.create(
-            model="gemini-1.5-flash",
+            model="gemini-2.0-flash",
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": text},
             ],
-            # We explicitly ask for a JSON response, but parse it ourselves
             response_format={"type": "json_object"},
         )
         
@@ -82,11 +153,12 @@ def translate_text(text: str) -> dict | None:
         if not raw_json_response:
             return None
 
-        # Manually parse the JSON string using our Pydantic model
-        knowledge_object = KnowledgeObject.model_validate_json(raw_json_response)
+        # Use the new AIResponse model for validation
+        ai_response = AIResponse.model_validate_json(raw_json_response)
         
-        # Convert the Pydantic model back to a dict for storing in the database
-        return knowledge_object.model_dump()
+        # Return the full validated object as a dict
+        # It will be in the format: {'type': '...', 'data': {...}}
+        return ai_response.model_dump()
 
     except Exception as e:
         print(f"An error occurred during translation: {e}")

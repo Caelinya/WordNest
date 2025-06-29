@@ -11,6 +11,7 @@ class TagRead(SQLModel):
 class NoteRead(SQLModel):
     id: int
     text: str
+    type: str = "word" # Add type field with a default
     translation: Optional[dict] = None
     tags: List[TagRead] = []
 

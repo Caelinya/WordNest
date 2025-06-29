@@ -35,6 +35,7 @@ class User(SQLModel, table=True):
 class Note(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     text: str
+    type: str = Field(index=True) # AI-classified type: 'word', 'phrase', or 'sentence'
     translation: dict[str, Any] | None = Field(default=None, sa_column=Column(JSON))
 
     owner_id: int | None = Field(default=None, foreign_key="user.id")

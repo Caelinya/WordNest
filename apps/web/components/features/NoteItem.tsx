@@ -1,12 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
@@ -15,34 +9,23 @@ import { TagBadge } from "../ui/TagBadge";
 import { TagInput } from "./TagInput";
 import { Trash2, Pencil, Save, X } from 'lucide-react';
 
+import { WordCard, WordAnalysis } from "./WordCard";
+import { PhraseCard, PhraseAnalysis } from "./PhraseCard";
+import { SentenceCard, SentenceAnalysis } from "./SentenceCard";
+
 // --- Type Definitions ---
-interface Example {
-  sentence: string;
-  translation: string;
-}
-
-interface Definition {
-  part_of_speech: string;
-  translation: string;
-  explanation: string;
-  examples: Example[];
-}
-
-interface KnowledgeObject {
-  word: string;
-  definitions: Definition[];
-}
-
 interface Tag {
   id: number;
   name: string;
   color: string;
 }
 
+// This is the new, unified Note type that matches the backend.
 interface Note {
   id: number;
   text: string;
-  translation: KnowledgeObject | null;
+  type: "word" | "phrase" | "sentence";
+  translation: WordAnalysis | PhraseAnalysis | SentenceAnalysis | null;
   tags: Tag[];
 }
 
@@ -100,6 +83,32 @@ export function NoteItem({ note }: NoteItemProps) {
 
   // --- Render Logic ---
 
+  const renderCardContent = () => {
+    if (!note.translation) {
+      return (
+        <p className="mt-2 text-sm text-muted-foreground">
+          No translation data available.
+        </p>
+      );
+    }
+
+    switch (note.type) {
+      case "word":
+        return <WordCard data={note.translation as WordAnalysis} />;
+      case "phrase":
+        return <PhraseCard data={note.translation as PhraseAnalysis} />;
+      case "sentence":
+        return <SentenceCard data={note.translation as SentenceAnalysis} />;
+      default:
+        // Fallback for unknown types
+        return (
+            <p className="mt-2 text-sm text-red-500">
+                Unsupported note type: {note.type}
+            </p>
+        );
+    }
+  };
+
   const renderTags = () => {
     if (isEditing) {
       return (
@@ -136,35 +145,18 @@ export function NoteItem({ note }: NoteItemProps) {
   return (
     <div className="group flex items-start justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50">
       <div className="flex-grow">
-        <h3 className="text-lg font-semibold">{note.text}</h3>
+        <div className="flex items-center gap-3">
+          <h3 className="text-lg font-semibold">{note.text}</h3>
+          {note.type === 'word' && note.translation && (note.translation as WordAnalysis).phonetic && (
+            <span className="text-sm text-muted-foreground font-sans">
+              [{(note.translation as WordAnalysis).phonetic}]
+            </span>
+          )}
+        </div>
         
         {renderTags()}
 
-        {note.translation && (
-          <Accordion type="single" collapsible className="w-full mt-2">
-            {note.translation.definitions.map((def, index) => (
-              <AccordionItem value={`item-${index}`} key={index}>
-                <AccordionTrigger>
-                  <div className="flex items-center gap-3 text-sm">
-                    <span className="font-semibold">{def.part_of_speech}</span>
-                    <span>{def.translation}</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <p className="text-muted-foreground mb-4">{def.explanation}</p>
-                  <ul className="space-y-3">
-                    {def.examples.map((ex, exIndex) => (
-                      <li key={exIndex} className="text-sm">
-                        <p>{ex.sentence}</p>
-                        <p className="text-muted-foreground">{ex.translation}</p>
-                      </li>
-                    ))}
-                  </ul>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        )}
+        {renderCardContent()}
       </div>
 
        <div className="ml-4 flex-shrink-0">

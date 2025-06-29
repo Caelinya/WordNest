@@ -15,16 +15,24 @@ def get_session():
 
 @router.post("", response_model=NoteRead)
 def create_note(note: NoteCreate, current_user: User = Depends(get_current_user), session: Session = Depends(get_session)):
-    # Call the translation service
-    translated_text = translation_service.translate_text(note.text)
+    # Call the new translation service, which returns a dict with 'type' and 'data'
+    ai_response = translation_service.translate_text(note.text)
+
+    note_type = "word" # Default type
+    note_data = None
+
+    if ai_response:
+        note_type = ai_response.get("type", "word")
+        note_data = ai_response.get("data")
 
     # Get or create tags
     tags = tag_service.get_or_create_tags_db(db=session, owner=current_user, tag_names=note.tags)
     
-    # Create the Note object with the translation and tags
+    # Create the Note object with the new type and data fields
     db_note = Note(
         text=note.text,
-        translation=translated_text,
+        type=note_type,
+        translation=note_data,
         owner_id=current_user.id,
         tags=tags
     )

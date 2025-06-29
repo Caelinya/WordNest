@@ -1,88 +1,124 @@
 import pytest
 from unittest.mock import MagicMock
-from pydantic import BaseModel
+import json
 
 # Adjust the import path based on the project structure
 from app.services import translation_service
-from app.services.translation_service import KnowledgeObject, Definition, Example
+from app.services.translation_service import AIResponse
 
-# A mock successful response from the AI, mimicking the structure
-MOCK_KNOWLEDGE_OBJECT = KnowledgeObject(
-    word="bank",
-    phonetic="/bæŋk/",
-    definitions=[
-        Definition(
-            part_of_speech="noun",
-            translation="银行",
-            explanation="A financial establishment.",
-            examples=[
-                Example(
-                    sentence="I need to go to the bank.",
-                    translation="我需要去银行。"
-                )
-            ],
-        )
-    ],
-)
+# --- Mock Data ---
 
-def test_translate_text_success(monkeypatch):
-    """
-    Test the translate_text function with a mocked successful API call.
-    """
-    # 1. Create a mock completion object that the client would return
+# 1. Mock data for 'word' type
+MOCK_WORD_RESPONSE_STR = json.dumps({
+    "type": "word",
+    "data": {
+        "phonetic": "/rɪˈzɪliəns/",
+        "definitions": [{
+            "part_of_speech": "noun",
+            "translation": "韧性; 恢复力",
+            "explanation": "The capacity to recover quickly from difficulties; toughness.",
+            "examples": [{
+                "sentence": "The resilience of the economy has been remarkable.",
+                "translation": "经济的恢复力非常惊人。"
+            }]
+        }]
+    }
+})
+EXPECTED_WORD_DICT = json.loads(MOCK_WORD_RESPONSE_STR)
+
+# 2. Mock data for 'phrase' type
+MOCK_PHRASE_RESPONSE_STR = json.dumps({
+    "type": "phrase",
+    "data": {
+        "explanation": "To be alert, quick to understand, and competent.",
+        "translation": "反应快; 精明能干",
+        "examples": [{
+            "sentence": "Our new project manager is really on the ball.",
+            "translation": "我们的新项目经理确实非常精明能干。"
+        }]
+    }
+})
+EXPECTED_PHRASE_DICT = json.loads(MOCK_PHRASE_RESPONSE_STR)
+
+# 3. Mock data for 'sentence' type
+MOCK_SENTENCE_RESPONSE_STR = json.dumps({
+    "type": "sentence",
+    "data": {
+        "translation": "这只敏捷的棕色狐狸跳过了那只懒狗。",
+        "keywords": ["quick", "brown", "fox", "jumps", "lazy", "dog"],
+        "grammar_analysis": "A simple declarative sentence."
+    }
+})
+EXPECTED_SENTENCE_DICT = json.loads(MOCK_SENTENCE_RESPONSE_STR)
+
+
+def mock_openai_client(monkeypatch, response_str: str):
+    """Helper function to mock the OpenAI client."""
     mock_completion = MagicMock()
-    # The .parse() method returns the object in `choices[0].message.parsed`
     mock_completion.choices = [MagicMock()]
-    mock_completion.choices[0].message.parsed = MOCK_KNOWLEDGE_OBJECT
+    mock_completion.choices[0].message = MagicMock()
+    mock_completion.choices[0].message.content = response_str
 
-    # 2. Mock the 'parse' method of the openai client
-    mock_parse = MagicMock(return_value=mock_completion)
+    mock_create = MagicMock(return_value=mock_completion)
     
-    # We assume the client exists for this test
     mock_client = MagicMock()
-    mock_client.beta.chat.completions.parse = mock_parse
+    mock_client.chat.completions.create = mock_create
     
-    # 3. Use monkeypatch to replace the actual client with our mock
     monkeypatch.setattr(translation_service, "client", mock_client)
+    return mock_create
 
-    # 4. Call the function we want to test
-    result = translation_service.translate_text("bank")
-
-    # 5. Assert the results
-    assert result is not None
-    assert isinstance(result, dict)
-    assert result["word"] == "bank"
-    assert result["definitions"][0]["translation"] == "银行"
+def test_translate_word_success(monkeypatch):
+    """Test translation for a 'word' type with a mocked successful API call."""
+    mock_create = mock_openai_client(monkeypatch, MOCK_WORD_RESPONSE_STR)
     
-    # Ensure the real client's 'parse' method was called once
-    mock_parse.assert_called_once()
+    result = translation_service.translate_text("resilience")
+    
+    assert result is not None
+    assert result == EXPECTED_WORD_DICT
+    mock_create.assert_called_once()
 
+def test_translate_phrase_success(monkeypatch):
+    """Test translation for a 'phrase' type."""
+    mock_create = mock_openai_client(monkeypatch, MOCK_PHRASE_RESPONSE_STR)
+
+    result = translation_service.translate_text("on the ball")
+
+    assert result is not None
+    assert result == EXPECTED_PHRASE_DICT
+    mock_create.assert_called_once()
+
+def test_translate_sentence_success(monkeypatch):
+    """Test translation for a 'sentence' type."""
+    mock_create = mock_openai_client(monkeypatch, MOCK_SENTENCE_RESPONSE_STR)
+
+    result = translation_service.translate_text("The quick brown fox...")
+
+    assert result is not None
+    assert result == EXPECTED_SENTENCE_DICT
+    mock_create.assert_called_once()
 
 def test_translate_text_api_error(monkeypatch):
-    """
-    Test that the function returns None when the API call raises an exception.
-    """
-    # 1. Configure the mock to raise an exception when called
-    mock_parse = MagicMock(side_effect=Exception("API limit reached"))
+    """Test that the function returns None when the API call raises an exception."""
+    mock_create = MagicMock(side_effect=Exception("API limit reached"))
     
     mock_client = MagicMock()
-    mock_client.beta.chat.completions.parse = mock_parse
+    mock_client.chat.completions.create = mock_create
     
-    # 2. Patch the client
     monkeypatch.setattr(translation_service, "client", mock_client)
 
-    # 3. Call the function and assert it returns None
     result = translation_service.translate_text("test")
     assert result is None
 
+def test_translate_bad_json_response(monkeypatch):
+    """Test that the function returns None when the API returns invalid JSON."""
+    mock_openai_client(monkeypatch, '{"type": "word", "data": "missing fields"}')
+    
+    result = translation_service.translate_text("test")
+    assert result is None
 
 def test_translate_text_client_not_configured(monkeypatch):
-    """
-    Test that the function returns None if the client is not configured (e.g., no API key).
-    """
-    # 1. Patch the client to be None
+    """Test that the function returns None if the client is not configured."""
     monkeypatch.setattr(translation_service, "client", None)
     
-    # 2. Call the function and assert it returns None
     result = translation_service.translate_text("test")
     assert result is None
