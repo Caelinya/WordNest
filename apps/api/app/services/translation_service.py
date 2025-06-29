@@ -50,6 +50,7 @@ class SentenceAnalysis(BaseModel):
 
 class AIResponse(BaseModel):
     type: Literal["word", "phrase", "sentence"]
+    corrected_text: str
     data: Union[WordAnalysis, PhraseAnalysis, SentenceAnalysis]
 
 # --- System Prompt ---
@@ -58,8 +59,9 @@ You are an expert linguist and AI assistant. Your task is to analyze a given tex
 
 **Overall JSON Output Structure:**
 - You MUST respond with ONLY a raw JSON string. Do not add any extra text, explanations, or markdown formatting like ```json.
-- The root of the JSON object must have two keys: "type" and "data".
-- The "type" key's value must be one of three strings: "word", "phrase", or "sentence".
+- The root of the JSON object must have three keys: "type", "corrected_text", and "data".
+- "type": Must be one of "word", "phrase", or "sentence".
+- "corrected_text": If the user's input has spelling or grammar errors, provide the corrected version here. If the input is perfect, this field should be the same as the original input.
 - The structure of the "data" key's value depends on the "type".
 
 ---
@@ -71,6 +73,7 @@ The "data" object must contain "phonetic" (optional) and "definitions".
 ```json
 {
   "type": "word",
+  "corrected_text": "resilience",
   "data": {
     "phonetic": "/rɪˈzɪliəns/",
     "definitions": [
@@ -99,6 +102,7 @@ The "data" object must contain "explanation", "translation", and "examples".
 ```json
 {
   "type": "phrase",
+  "corrected_text": "on the ball",
   "data": {
     "explanation": "To be alert, quick to understand, and competent.",
     "translation": "反应快; 精明能干",
@@ -121,6 +125,7 @@ The "data" object must contain "translation", "keywords", and "grammar_analysis"
 ```json
 {
   "type": "sentence",
+  "corrected_text": "The quick brown fox jumps over the lazy dog.",
   "data": {
     "translation": "这只敏捷的棕色狐狸跳过了那只懒狗。",
     "keywords": ["quick", "brown", "fox", "jumps", "lazy", "dog"],

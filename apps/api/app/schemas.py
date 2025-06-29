@@ -14,6 +14,7 @@ class NoteRead(SQLModel):
     type: str = "word" # Add type field with a default
     translation: Optional[dict] = None
     tags: List[TagRead] = []
+    corrected_text: Optional[str] = None
 
 
 # --- Note Schemas ---

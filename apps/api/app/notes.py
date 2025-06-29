@@ -20,10 +20,12 @@ def create_note(note: NoteCreate, current_user: User = Depends(get_current_user)
 
     note_type = "word" # Default type
     note_data = None
+    corrected_text = note.text # Default to original text
 
     if ai_response:
         note_type = ai_response.get("type", "word")
         note_data = ai_response.get("data")
+        corrected_text = ai_response.get("corrected_text", note.text)
 
     # Get or create tags
     tags = tag_service.get_or_create_tags_db(db=session, owner=current_user, tag_names=note.tags)
@@ -31,6 +33,7 @@ def create_note(note: NoteCreate, current_user: User = Depends(get_current_user)
     # Create the Note object with the new type and data fields
     db_note = Note(
         text=note.text,
+        corrected_text=corrected_text,
         type=note_type,
         translation=note_data,
         owner_id=current_user.id,

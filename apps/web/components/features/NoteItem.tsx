@@ -123,7 +123,7 @@ export function NoteItem({ note }: NoteItemProps) {
     <div className="group flex items-start justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50">
       <div className="flex-grow">
         <div className="flex items-center gap-3">
-          <h3 className="text-lg font-semibold">{note.text}</h3>
+          <h3 className="text-lg font-semibold">{note.corrected_text || note.text}</h3>
           {note.type === 'word' && note.translation && (note.translation as WordAnalysis).phonetic && (
             <span className="text-sm text-muted-foreground font-sans">
               [{(note.translation as WordAnalysis).phonetic}]

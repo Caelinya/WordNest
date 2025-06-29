@@ -11,6 +11,7 @@ export interface Tag {
 export interface Note {
   id: number;
   text: string;
+  corrected_text?: string | null;
   type: "word" | "phrase" | "sentence";
   translation: WordAnalysis | PhraseAnalysis | SentenceAnalysis | null;
   tags: Tag[];

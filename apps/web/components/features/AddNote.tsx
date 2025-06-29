@@ -40,15 +40,21 @@ export function AddNote() {
   });
 
   // 2. Creating data with useMutation
-  const createNoteMutation = useMutation({
-    mutationFn: (data: { text: string; tags: string[] }) =>
-      api.post("/notes", data),
-    onSuccess: () => {
-      toast.success("Note created successfully!");
+  const createNoteMutation = useMutation<Note, Error, { text: string; tags: string[] }>({
+    mutationFn: async (data: { text: string; tags: string[] }) => {
+      const response = await api.post("/notes", data);
+      return response.data;
+    },
+    onSuccess: (newNote) => {
       setNewNoteText("");
       setTags([]);
-      // 3. Invalidate the 'notes' query to refetch the list automatically
       queryClient.invalidateQueries({ queryKey: ["notes"] });
+
+      if (newNote.corrected_text && newNote.text !== newNote.corrected_text) {
+        toast.info(`Your input was corrected to: "${newNote.corrected_text}"`);
+      } else {
+        toast.success("Note created successfully!");
+      }
     },
     onError: (error) => {
       console.error(error);
