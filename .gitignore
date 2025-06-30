@@ -39,6 +39,7 @@ next-env.d.ts
 
 # Project
 plan.md
+idea.md
 
 # Python cache
 __pycache__/
