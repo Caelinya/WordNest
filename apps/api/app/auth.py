@@ -63,12 +63,24 @@ def get_current_user(token: str = Depends(oauth2_scheme), session: Session = Dep
 # --- API Endpoints ---
 @router.post("/register", response_model=UserRead)
 def register(user: UserCreate, session: Session = Depends(get_session)):
-    db_user = session.exec(select(User).where(User.username == user.username)).first()
-    if db_user:
-        raise HTTPException(status_code=400, detail="Username already registered")
-    
+    # Check if username or email already exists
+    existing_user = session.exec(
+        select(User).where(
+            (User.username == user.username) | (User.email == user.email)
+        )
+    ).first()
+    if existing_user:
+        if existing_user.username == user.username:
+            raise HTTPException(status_code=400, detail="Username already registered")
+        if existing_user.email == user.email:
+            raise HTTPException(status_code=400, detail="Email already registered")
+
     hashed_password = get_password_hash(user.password)
-    db_user = User(username=user.username, hashed_password=hashed_password)
+    db_user = User(
+        username=user.username,
+        email=user.email,
+        hashed_password=hashed_password
+    )
     
     session.add(db_user)
     session.commit()
@@ -78,7 +90,11 @@ def register(user: UserCreate, session: Session = Depends(get_session)):
 
 @router.post("/token", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(get_session)):
-    user = session.exec(select(User).where(User.username == form_data.username)).first()
+    user = session.exec(
+        select(User).where(
+            (User.username == form_data.username) | (User.email == form_data.username)
+        )
+    ).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

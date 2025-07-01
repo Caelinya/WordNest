@@ -20,6 +20,7 @@ export function Auth() {
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [registerUsername, setRegisterUsername] = useState("");
+  const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
@@ -30,10 +31,12 @@ export function Auth() {
     try {
       await api.post("/auth/register", {
         username: registerUsername,
+        email: registerEmail,
         password: registerPassword,
       });
       toast.success("Registration successful! Please log in.");
       setRegisterUsername("");
+      setRegisterEmail("");
       setRegisterPassword("");
       // Ideally, switch to the login tab here
     } catch {
@@ -136,6 +139,17 @@ export function Auth() {
                         required
                         disabled={isLoading}
                       />
+                    </div>
+                    <div className="grid gap-2">
+                        <Input
+                            id="register-email"
+                            type="email"
+                            placeholder="Email"
+                            value={registerEmail}
+                            onChange={(e) => setRegisterEmail(e.target.value)}
+                            required
+                            disabled={isLoading}
+                        />
                     </div>
                     <div className="grid gap-2">
                       <Input
