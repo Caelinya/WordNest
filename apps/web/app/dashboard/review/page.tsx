@@ -1,7 +1,7 @@
 "use client";
 
-import { ReviewNotes } from "@/components/features/ReviewNotes";
+import { ReviewSession } from "@/components/features/review/ReviewSession";
 
-export default function ReviewNotesPage() {
-    return <ReviewNotes />;
+export default function ReviewPage() {
+  return <ReviewSession />;
 }
