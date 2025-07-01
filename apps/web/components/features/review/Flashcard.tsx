@@ -30,7 +30,7 @@ export function Flashcard({ card, onCompleted }: FlashcardProps) {
   const [hintShakeIndex, setHintShakeIndex] = useState<number | null>(null);
 
   const { fullAnswer, answerMap, visualHintMap } = useMemo(() => {
-    const sanitizedAnswer = card.answer.replace(/\s/g, '').toLowerCase();
+    const sanitizedAnswer = card.answer.replace(/\s/g, '');
     const aMap = new Map<number, { char: string, isHint: boolean, visualIndex: number }>();
     const vMap = new Map<number, string>();
     
@@ -41,7 +41,8 @@ export function Flashcard({ card, onCompleted }: FlashcardProps) {
 
         const isHint = card.mode === 'first-letter-hint' && (i === 0 || /\s/.test(card.answer[i - 1]));
         
-        aMap.set(nonSpaceIndex, { char: char.toLowerCase(), isHint, visualIndex: nonSpaceIndex });
+        // Store the original case of the character
+        aMap.set(nonSpaceIndex, { char: char, isHint, visualIndex: nonSpaceIndex });
         if(isHint) {
             vMap.set(nonSpaceIndex, char.toLowerCase());
         }
@@ -106,25 +107,32 @@ export function Flashcard({ card, onCompleted }: FlashcardProps) {
     const currentPos = userInput.length;
     const currentAnswerInfo = answerMap.get(currentPos);
     
-    if (forgivingHintMode && currentAnswerInfo?.isHint) {
-      if (typedChar === currentAnswerInfo.char) {
-        // Correct hint typed. Flash and add ONLY this char.
-        setHintFlashIndex(currentAnswerInfo.visualIndex);
-        setUserInput(userInput + typedChar);
-      } else {
-        // Incorrect hint typed. Shake and do nothing.
-        setHintShakeIndex(currentAnswerInfo.visualIndex);
-      }
-      return;
+    if (forgivingHintMode && currentAnswerInfo) {
+        if(currentAnswerInfo.isHint) {
+            if (typedChar === currentAnswerInfo.char.toLowerCase()) {
+                setHintFlashIndex(currentAnswerInfo.visualIndex);
+                setUserInput(userInput + currentAnswerInfo.char); // Use correct case
+            } else {
+                setHintShakeIndex(currentAnswerInfo.visualIndex);
+            }
+            return;
+        }
     }
     
+    // Auto-correct case for non-hint characters
+    const correctChar = answerMap.get(currentPos)?.char;
     const sanitizedNewValue = card.mode === 'translation-recall' ? newValue : newValue.replace(/\s/g, '');
+
+    if (correctChar && typedChar === correctChar.toLowerCase()) {
+        setUserInput(userInput + correctChar);
+    } else {
+        setUserInput(sanitizedNewValue);
+    }
     setStatus('typing');
-    setUserInput(sanitizedNewValue);
   };
 
   const handleCheck = () => {
-    const isCorrect = userInput.toLowerCase() === fullAnswer;
+    const isCorrect = userInput.toLowerCase() === fullAnswer.toLowerCase();
     if (isCorrect) {
       setStatus('correct');
     } else {
@@ -164,6 +172,11 @@ export function Flashcard({ card, onCompleted }: FlashcardProps) {
           type="text"
           value={userInput}
           onChange={handleInputChange}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+              e.preventDefault();
+            }
+          }}
           className="opacity-0 w-0 h-0 p-0 m-0 border-0"
           maxLength={fullAnswer.length}
           autoFocus
