@@ -16,3 +16,9 @@ export interface Note {
   translation: WordAnalysis | PhraseAnalysis | SentenceAnalysis | null;
   tags: Tag[];
 }
+
+export interface User {
+    id: number;
+    username: string;
+    email: string;
+}

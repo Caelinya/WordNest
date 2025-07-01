@@ -57,7 +57,8 @@ export function Auth() {
       const response = await api.post("/auth/token", formData, {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
       });
-      login(response.data.access_token);
+      const { access_token, user } = response.data;
+      login(access_token, user);
       toast.success("Welcome back!");
     } catch {
       // The global error handler in api.ts will show the toast

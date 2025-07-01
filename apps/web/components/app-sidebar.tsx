@@ -23,12 +23,11 @@ import {
 } from "@/components/ui/sidebar"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-    const { logout } = useAuth();
-    // This will be replaced with actual user data
-    const user = {
-        name: "User",
-        email: "user@wordnest.com",
-        avatar: "",
+    const { user } = useAuth();
+    
+    if (!user) {
+        // You can return a loading state or null here
+        return null;
     }
 
     const navMain = [

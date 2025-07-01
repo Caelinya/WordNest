@@ -2,49 +2,54 @@
 
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { setCookie, getCookie, deleteCookie } from 'cookies-next';
+import { User } from '@/types/notes';
+import api from '@/lib/api';
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  token: string | null;
+  user: User | null;
   isLoading: boolean;
-  login: (token: string) => void;
+  login: (token: string, userData: User) => void;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const checkStoredToken = async () => {
-      try {
-        const storedToken = await getCookie('auth_token');
-        if (typeof storedToken === 'string') {
-          setToken(storedToken);
+    const fetchUser = async () => {
+      const token = getCookie('auth_token');
+      if (token) {
+        try {
+          const response = await api.get('/auth/users/me'); // This endpoint needs to be created
+          setUser(response.data);
+        } catch (error) {
+          console.error("Failed to fetch user", error);
+          deleteCookie('auth_token'); // Clear invalid token
         }
-      } catch (error) {
-        console.error("Failed to retrieve auth token from cookie", error);
-      } finally {
-        setIsLoading(false);
       }
+      setIsLoading(false);
     };
-    checkStoredToken();
+    fetchUser();
   }, []);
 
-  const login = (newToken: string) => {
-    setToken(newToken);
-    setCookie('auth_token', newToken, { maxAge: 60 * 60 * 24 * 7 }); // 7 days
+  const login = (token: string, userData: User) => {
+    setUser(userData);
+    setCookie('auth_token', token, { maxAge: 60 * 60 * 24 * 7 }); // 7 days
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   };
 
   const logout = () => {
-    setToken(null);
+    setUser(null);
     deleteCookie('auth_token');
+    delete api.defaults.headers.common['Authorization'];
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated: !!token, token, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated: !!user, user, isLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

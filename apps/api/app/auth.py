@@ -107,4 +107,8 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = D
         data={"sub": user.username}, expires_delta=access_token_expires
     )
     
-    return Token(access_token=access_token, token_type="bearer")
+    return Token(access_token=access_token, token_type="bearer", user=user)
+
+@router.get("/users/me", response_model=UserRead)
+def read_users_me(current_user: User = Depends(get_current_user)):
+    return current_user
