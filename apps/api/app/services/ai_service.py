@@ -1,21 +1,14 @@
-import os
-from openai import OpenAI
-from dotenv import load_dotenv
 import json
-
-load_dotenv()
-
-# --- Configuration ---
-API_KEY = os.getenv("API_KEY")
-BASE_URL = os.getenv("BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/")
+from openai import OpenAI
+from ..config import settings
 
 client = None
-if not API_KEY:
+if not settings.API_KEY:
     print("Warning: API_KEY is not set. AI services will be disabled.")
 else:
     client = OpenAI(
-        api_key=API_KEY,
-        base_url=BASE_URL,
+        api_key=settings.API_KEY,
+        base_url=settings.BASE_URL,
     )
 
 def call_ai(system_prompt: str, user_prompt: str | None = None) -> dict | None:
@@ -33,7 +26,7 @@ def call_ai(system_prompt: str, user_prompt: str | None = None) -> dict | None:
 
     try:
         completion = client.chat.completions.create(
-            model="gemini-2.0-flash", # Consider making the model configurable
+            model=settings.AI_MODEL,
             messages=messages,
             response_format={"type": "json_object"},
         )

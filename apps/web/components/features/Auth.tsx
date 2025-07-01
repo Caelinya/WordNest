@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { Feather } from "lucide-react";
 
 export function Auth() {
   const [loginUsername, setLoginUsername] = useState("");
@@ -34,8 +35,9 @@ export function Auth() {
       toast.success("Registration successful! Please log in.");
       setRegisterUsername("");
       setRegisterPassword("");
+      // Ideally, switch to the login tab here
     } catch {
-      toast.error("Registration failed.");
+      // The global error handler in api.ts will show the toast
     } finally {
       setIsLoading(false);
     }
@@ -53,80 +55,109 @@ export function Auth() {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
       });
       login(response.data.access_token);
-      toast.success("Login successful!");
+      toast.success("Welcome back!");
     } catch {
-      toast.error("Incorrect username or password.");
+      // The global error handler in api.ts will show the toast
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Tabs defaultValue="login" className="w-[400px]">
-      <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="login">Login</TabsTrigger>
-        <TabsTrigger value="register">Register</TabsTrigger>
-      </TabsList>
-      <TabsContent value="login">
-        <Card>
-          <CardHeader>
-            <CardTitle>Login</CardTitle>
-            <CardDescription>
-              Access your WordNest account.
-            </CardDescription>
-          </CardHeader>
-          <form onSubmit={handleLogin}>
-            <CardContent className="space-y-4">
-              <Input
-                placeholder="Username"
-                value={loginUsername}
-                onChange={(e) => setLoginUsername(e.target.value)}
-                required
-              />
-              <Input
-                type="password"
-                placeholder="Password"
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                required
-              />
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Logging in..." : "Login"}
-              </Button>
-            </CardContent>
-          </form>
-        </Card>
-      </TabsContent>
-      <TabsContent value="register">
-        <Card>
-          <CardHeader>
-            <CardTitle>Register</CardTitle>
-            <CardDescription>
-              Create a new WordNest account.
-            </CardDescription>
-          </CardHeader>
-          <form onSubmit={handleRegister}>
-            <CardContent className="space-y-4">
-              <Input
-                placeholder="Username"
-                value={registerUsername}
-                onChange={(e) => setRegisterUsername(e.target.value)}
-                required
-              />
-              <Input
-                type="password"
-                placeholder="Password"
-                value={registerPassword}
-                onChange={(e) => setRegisterPassword(e.target.value)}
-                required
-              />
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Registering..." : "Register"}
-              </Button>
-            </CardContent>
-          </form>
-        </Card>
-      </TabsContent>
-    </Tabs>
+    <div className="w-full h-screen lg:grid lg:grid-cols-2">
+      <div className="hidden bg-muted lg:flex lg:flex-col lg:items-center lg:justify-center p-10 text-center">
+          <Feather className="h-20 w-20 mb-6 text-primary" />
+          <h1 className="text-4xl font-bold tracking-tighter">WordNest</h1>
+          <p className="mt-4 text-lg text-muted-foreground">
+            From passive notes to active knowledge.
+          </p>
+      </div>
+      <div className="flex items-center justify-center py-12">
+        <div className="mx-auto grid w-[350px] gap-6">
+          <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="login">Login</TabsTrigger>
+              <TabsTrigger value="register">Register</TabsTrigger>
+            </TabsList>
+            <TabsContent value="login">
+              <Card className="border-none shadow-none">
+                <CardHeader>
+                  <CardTitle className="text-2xl">Welcome Back</CardTitle>
+                  <CardDescription>
+                    Enter your credentials to access your knowledge base.
+                  </CardDescription>
+                </CardHeader>
+                <form onSubmit={handleLogin}>
+                  <CardContent className="grid gap-4">
+                    <div className="grid gap-2">
+                      <Input
+                        id="login-username"
+                        placeholder="Username"
+                        value={loginUsername}
+                        onChange={(e) => setLoginUsername(e.target.value)}
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Input
+                        id="login-password"
+                        type="password"
+                        placeholder="Password"
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? "Signing in..." : "Sign In"}
+                    </Button>
+                  </CardContent>
+                </form>
+              </Card>
+            </TabsContent>
+            <TabsContent value="register">
+              <Card className="border-none shadow-none">
+                <CardHeader>
+                  <CardTitle className="text-2xl">Create an Account</CardTitle>
+                  <CardDescription>
+                    Start building your personal knowledge nest today.
+                  </CardDescription>
+                </CardHeader>
+                <form onSubmit={handleRegister}>
+                  <CardContent className="grid gap-4">
+                    <div className="grid gap-2">
+                      <Input
+                        id="register-username"
+                        placeholder="Username"
+                        value={registerUsername}
+                        onChange={(e) => setRegisterUsername(e.target.value)}
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Input
+                        id="register-password"
+                        type="password"
+                        placeholder="Password"
+                        value={registerPassword}
+                        onChange={(e) => setRegisterPassword(e.target.value)}
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? "Creating Account..." : "Sign Up"}
+                    </Button>
+                  </CardContent>
+                </form>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
+    </div>
   );
 }

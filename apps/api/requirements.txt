@@ -10,3 +10,4 @@ alembic
 PyMuPDF
 python-docx
 python-pptx
+pydantic-settings
