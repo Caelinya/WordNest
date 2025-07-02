@@ -8,6 +8,10 @@ class TagRead(SQLModel):
     name: str
     color: str
 
+class FolderRead(SQLModel):
+    id: int
+    name: str
+
 class NoteRead(SQLModel):
     id: int
     text: str
@@ -16,6 +20,7 @@ class NoteRead(SQLModel):
     tags: List[TagRead] = []
     corrected_text: Optional[str] = None
     folder_id: Optional[int] = None
+    folder: Optional[FolderRead] = None
 
 
 # --- Note Schemas ---

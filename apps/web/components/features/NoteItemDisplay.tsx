@@ -6,7 +6,7 @@ import { TagBadge } from "../ui/TagBadge";
 import { WordCard, WordAnalysis } from "./WordCard";
 import { PhraseCard, PhraseAnalysis } from "./PhraseCard";
 import { SentenceCard, SentenceAnalysis } from "./SentenceCard";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Folder } from "lucide-react";
 import { useDisplayMode } from "@/contexts/DisplayModeContext";
 
 interface NoteItemDisplayProps {
@@ -45,6 +45,13 @@ export function NoteItemDisplay({ note, onEdit, onDelete, isDeleting }: NoteItem
             </span>
           )}
         </div>
+
+        {note.folder && (
+            <div className="mt-1 flex items-center text-xs text-muted-foreground">
+                <Folder className="mr-1 h-3 w-3" />
+                <span>{note.folder.name}</span>
+            </div>
+        )}
         
         {note.tags && note.tags.length > 0 && (
           <div className="mt-2 flex flex-wrap items-center gap-2">

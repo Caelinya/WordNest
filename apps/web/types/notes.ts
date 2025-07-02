@@ -21,6 +21,7 @@ export interface Note {
   translation: WordAnalysis | PhraseAnalysis | SentenceAnalysis | null;
   tags: Tag[];
   folder_id?: number;
+  folder?: Folder;
 }
 
 export interface User {
