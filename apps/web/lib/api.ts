@@ -50,3 +50,20 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+export const authApi = {
+  login: async ({ username, password }: Record<string, string>) => {
+    const formData = new URLSearchParams();
+    formData.append('username', username);
+    formData.append('password', password);
+    
+    const response = await api.post("/auth/token", formData, {
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    });
+    return response.data;
+  },
+  register: async (userData: Record<string, string>) => {
+    const response = await api.post("/auth/register", userData);
+    return response.data;
+  }
+};

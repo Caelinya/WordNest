@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import api from "@/lib/api";
+import { authApi } from "@/lib/api";
+import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -22,50 +23,48 @@ export function Auth() {
   const [registerUsername, setRegisterUsername] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("login");
   const { login } = useAuth();
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    try {
-      await api.post("/auth/register", {
-        username: registerUsername,
-        email: registerEmail,
-        password: registerPassword,
-      });
+  const loginMutation = useMutation({
+    mutationFn: authApi.login,
+    onSuccess: (data) => {
+      const { access_token, user } = data;
+      login(access_token, user);
+      toast.success("Welcome back!");
+    },
+    // onError is handled globally by the axios interceptor
+  });
+
+  const registerMutation = useMutation({
+    mutationFn: authApi.register,
+    onSuccess: () => {
       toast.success("Registration successful! Please log in.");
       setRegisterUsername("");
       setRegisterEmail("");
       setRegisterPassword("");
-      // Ideally, switch to the login tab here
-    } catch {
-      // The global error handler in api.ts will show the toast
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      setActiveTab("login"); // Switch to the login tab
+    },
+  });
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    try {
-      const formData = new URLSearchParams();
-      formData.append('username', loginUsername);
-      formData.append('password', loginPassword);
-
-      const response = await api.post("/auth/token", formData, {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      });
-      const { access_token, user } = response.data;
-      login(access_token, user);
-      toast.success("Welcome back!");
-    } catch {
-      // The global error handler in api.ts will show the toast
-    } finally {
-      setIsLoading(false);
-    }
+    registerMutation.mutate({
+      username: registerUsername,
+      email: registerEmail,
+      password: registerPassword,
+    });
   };
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    loginMutation.mutate({
+      username: loginUsername,
+      password: loginPassword,
+    });
+  };
+
+  const isLoading = loginMutation.isPending || registerMutation.isPending;
 
   return (
     <div className="w-full h-screen lg:grid lg:grid-cols-2">
@@ -78,7 +77,7 @@ export function Auth() {
       </div>
       <div className="flex items-center justify-center py-12">
         <div className="mx-auto grid w-[350px] gap-6">
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="register">Register</TabsTrigger>

@@ -26,7 +26,7 @@ import { ImportButton } from "./ImportButton";
 export function AddNote() {
   const [newNoteText, setNewNoteText] = useState("");
   const [tags, setTags] = useState<string[]>([]);
-  const { token } = useAuth();
+  const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
   const { displayMode, toggleDisplayMode } = useDisplayMode();
 
@@ -37,7 +37,7 @@ export function AddNote() {
       const response = await api.get("/notes");
       return response.data;
     },
-    enabled: !!token, // Only run the query if the user is authenticated
+    enabled: isAuthenticated, // Only run the query if the user is authenticated
   });
 
   // 2. Creating data with useMutation
