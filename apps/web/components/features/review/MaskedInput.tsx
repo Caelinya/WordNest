@@ -1,88 +1,70 @@
 "use client";
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { cn } from "@/lib/utils";
-
-type ReviewStatus = 'pristine' | 'typing' | 'correct' | 'incorrect' | 'revealed';
+import { ReviewStatus } from '@/hooks/use-flashcard';
+import type { CharacterDetail } from '@/hooks/use-flashcard';
 
 interface MaskedInputProps {
-  answer: string;
+  characterDetails: CharacterDetail[];
   userInput: string;
   status: ReviewStatus;
-  visualHintMap?: Map<number, string>;
-  hintFlashIndex?: number | null;
-  hintShakeIndex?: number | null;
-  onAnimationComplete: () => void;
+  shakeCount: number;
 }
 
+// --- Component ---
 export function MaskedInput({
-  answer,
+  characterDetails,
   userInput,
   status,
-  visualHintMap = new Map(),
-  hintFlashIndex,
-  hintShakeIndex,
-  onAnimationComplete,
+  shakeCount,
 }: MaskedInputProps) {
   
-  const characters = useMemo(() => {
-    const answerChars = answer.split('');
-    let visualIndex = 0;
-
-    return answerChars.map((char, index) => {
-      if (/\s/.test(char)) {
-        return { char: ' ', type: 'whitespace' as const, visualIndex: -1, key: `space-${index}` };
-      }
-
-      const key = `${char}-${visualIndex}`;
-      const isHint = visualHintMap.has(visualIndex);
-      const typedChar = userInput[visualIndex];
-      
-      let result;
-      if (typedChar) {
-          result = { char: typedChar, type: 'typed' as const, visualIndex };
-      } else if (isHint) {
-        result = { char: answer[index], type: 'hint' as const, visualIndex };
-      } else {
-        result = { char: '_', type: 'placeholder' as const, visualIndex };
-      }
-      
-      visualIndex++;
-      return { ...result, key };
-    });
-  }, [answer, userInput, visualHintMap]);
-
   const statusColorClass = {
-    pristine: "text-primary",
     typing: "text-primary",
     correct: "text-green-500",
-    incorrect: "text-yellow-500 animate-shake",
+    incorrect: "text-yellow-500", // This will be triggered by shake
     revealed: "text-red-500",
   }[status];
+
+  // We use a key on the outer div to force a re-render of the animation
+  // when the shakeCount changes.
+  const shakeKey = `shake-${shakeCount}`;
 
   return (
     <div className="flex items-center justify-center space-x-1 text-2xl md:text-3xl font-mono tracking-widest">
       <div
+        key={shakeKey}
         className={cn(
           "flex items-center justify-center transition-colors duration-300",
-          statusColorClass
+          statusColorClass,
+          status === 'typing' && shakeCount > 0 ? "animate-shake" : ""
         )}
       >
-        {characters.map((item) => {
-          if (item.type === 'whitespace') {
-            return <span key={item.key} className="w-4"></span>;
+        {characterDetails.map((detail, index) => {
+          if (detail.type === 'whitespace') {
+            return <span key={`space-${index}`} className="w-4"></span>;
           }
+
+          const typedChar = userInput[index];
+          let displayChar = '_';
+          let isHintLook = false;
+          
+          if (typedChar) {
+            displayChar = typedChar;
+          } else if (detail.isHint) {
+            displayChar = detail.originalChar;
+            isHintLook = true;
+          }
+
           return (
             <span
-              key={item.key}
-              onAnimationEnd={onAnimationComplete}
+              key={`${detail.originalChar}-${index}`}
               className={cn("inline-block w-6 text-center", {
-                "text-muted-foreground": item.type === 'hint',
-                "animate-glow": hintFlashIndex === item.visualIndex,
-                "animate-shake": hintShakeIndex === item.visualIndex,
+                "text-muted-foreground": isHintLook,
               })}
             >
-              {item.char}
+              {displayChar}
             </span>
           );
         })}

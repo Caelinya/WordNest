@@ -7,7 +7,12 @@
     "lint": "pnpm -r lint"
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@vitejs/plugin-react": "^4.6.0",
+    "jsdom": "^26.1.0",
+    "typescript": "^5.0.0",
+    "vitest": "^3.2.4"
   },
   "packageManager": "pnpm@9.4.0"
 }

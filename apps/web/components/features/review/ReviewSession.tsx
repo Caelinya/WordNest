@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Flashcard, FlashcardData } from './Flashcard';
+import { Flashcard } from './Flashcard';
+import { FlashcardData } from '@/hooks/use-flashcard';
 import { Button } from '@/components/ui/button';
 
 // --- Hardcoded Demo Data ---
@@ -69,7 +70,7 @@ export function ReviewSession() {
           <Button onClick={handleRestart}>Review Again</Button>
         </div>
       ) : (
-        <Flashcard card={currentCard} onCompleted={handleCompleted} />
+        <Flashcard key={currentCard.id} card={currentCard} onCompleted={handleCompleted} />
       )}
     </div>
   );
