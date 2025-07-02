@@ -40,6 +40,7 @@ next-env.d.ts
 # Project
 plan.md
 idea.md
+.roomodes
 
 # Python cache
 __pycache__/

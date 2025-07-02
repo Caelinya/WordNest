@@ -20,12 +20,18 @@ const mockReviewQueue: FlashcardData[] = [
   },
   {
     id: 3,
+    question: "中文：弹性；恢复力",
+    answer: "resilience",
+    mode: 'translation-recall',
+  },
+  {
+    id: 4,
     question: "中文：苹果",
     answer: "apple",
     mode: 'length-hint',
   },
     {
-    id: 4,
+    id: 5,
     question: "中文：一个很简单的事",
     answer: "a piece of cake",
     mode: 'first-letter-hint',
