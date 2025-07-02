@@ -30,8 +30,21 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    const message = error.response?.data?.detail || 'An unexpected error occurred.';
-    toast.error(message);
+    // Check for 401 Unauthorized error
+    if (error.response?.status === 401) {
+      // Avoid redirect loops if already on the login page
+      if (window.location.pathname !== '/') {
+        toast.error("Your session has expired. Please log in again.");
+        // We can't call the useAuth hook here, so we manually clear the cookie
+        // and force a reload, which will trigger the AuthProvider logic.
+        document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        window.location.href = '/';
+      }
+    } else {
+      const message = error.response?.data?.detail || 'An unexpected error occurred.';
+      toast.error(message);
+    }
+    
     return Promise.reject(error);
   }
 );

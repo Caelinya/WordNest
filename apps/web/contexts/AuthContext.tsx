@@ -46,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     deleteCookie('auth_token');
     delete api.defaults.headers.common['Authorization'];
+    window.location.href = '/'; // Force a reload to the home page
   };
 
   return (

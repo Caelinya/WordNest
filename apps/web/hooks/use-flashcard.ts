@@ -49,14 +49,10 @@ export function useFlashcard(card: FlashcardData, onCompleted: (rating: 'again' 
 
   // 2. Unified keyboard event handler, now returned to be used in the component
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    console.log(`--- KeyDown Event ---`);
-    console.log(`Key: ${e.key}, Status: ${status}`);
-
     // Always prevent default for the keys we handle to avoid side effects
     
     // --- Handle Rating ---
     if (status === 'correct' || status === 'revealed') {
-      console.log('Action: Rating');
       e.preventDefault();
       if (e.key === 'Enter' || e.key === '1') {
         onCompleted(status === 'correct' ? 'easy' : 'again');
@@ -68,7 +64,6 @@ export function useFlashcard(card: FlashcardData, onCompleted: (rating: 'again' 
 
     // --- Handle Typing ---
     if (status === 'typing') {
-      console.log('Action: Typing');
       // Handle Backspace
       if (e.key === 'Backspace') {
         e.preventDefault();
@@ -94,19 +89,15 @@ export function useFlashcard(card: FlashcardData, onCompleted: (rating: 'again' 
 
           if (e.key.toLowerCase() === expectedChar.toLowerCase()) {
               const correctPrefix = answer.substring(0, nextCharIndex + 1);
-              console.log('Input Correct. New userInput:', correctPrefix);
               setUserInput(correctPrefix);
               if (correctPrefix.toLowerCase() === answer.toLowerCase()) {
-                  console.log('Status change: -> correct');
                   setStatus('correct');
               }
           } else {
               const newErrorCount = errorCount + 1;
-              console.log('Input Incorrect. Error count:', newErrorCount);
               setErrorCount(newErrorCount);
               setShake(s => s + 1);
               if (newErrorCount >= ERROR_THRESHOLD) {
-                  console.log('Status change: -> revealed');
                   setStatus('revealed');
                   setUserInput(answer);
               }
