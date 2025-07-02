@@ -15,6 +15,7 @@ class NoteRead(SQLModel):
     translation: Optional[dict] = None
     tags: List[TagRead] = []
     corrected_text: Optional[str] = None
+    folder_id: Optional[int] = None
 
 
 # --- Note Schemas ---
@@ -22,6 +23,7 @@ class NoteRead(SQLModel):
 class NoteCreate(SQLModel):
     text: str
     tags: Optional[List[str]] = []
+    folder_id: Optional[int] = None
 
 class NoteUpdate(SQLModel):
     text: Optional[str] = None
@@ -29,6 +31,7 @@ class NoteUpdate(SQLModel):
     translation: Optional[dict] = None
     tags: Optional[List[str]] = None
     corrected_text: Optional[str] = None
+    folder_id: Optional[int] = None
 
 # --- User Schemas ---
 

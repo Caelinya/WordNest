@@ -8,6 +8,8 @@ import {
   Home,
   PlusCircle,
   Settings,
+  Library,
+  LayoutDashboard,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -35,21 +37,26 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {
             title: "Dashboard",
             url: "/dashboard",
-            icon: Home,
+            icon: LayoutDashboard,
         },
         {
             title: "Add Note",
-            url: "/dashboard/add",
+            url: "/add",
             icon: PlusCircle,
         },
         {
+            title: "My Library",
+            url: "/library",
+            icon: Library,
+        },
+        {
             title: "Review",
-            url: "/dashboard/review",
+            url: "/review",
             icon: BookOpen,
         },
         {
             title: "Settings",
-            url: "/dashboard/settings",
+            url: "/settings",
             icon: Settings,
         },
     ]

@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlmodel import Session, select
 from datetime import timedelta, datetime
 from .db import engine
-from .models import User
+from .models import User, Folder
 from .schemas import UserCreate, UserRead, Token
 
 # Security utilities
@@ -85,6 +85,11 @@ def register(user: UserCreate, session: Session = Depends(get_session)):
     session.add(db_user)
     session.commit()
     session.refresh(db_user)
+
+    # Create a default folder for the new user
+    default_folder = Folder(name="default", owner_id=db_user.id)
+    session.add(default_folder)
+    session.commit()
     
     return db_user
 

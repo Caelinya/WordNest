@@ -11,3 +11,4 @@ PyMuPDF
 python-docx
 python-pptx
 pydantic-settings
+fsrs

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session
+from sqlmodel import Session, select
 from .db import engine
-from .models import Note, User
+from .models import Note, User, Folder
 from .auth import get_current_user
 from .services import translation_service, tag_service
 from .schemas import NoteCreate, NoteUpdate, NoteRead
@@ -15,6 +15,18 @@ def get_session():
 
 @router.post("", response_model=NoteRead)
 def create_note(note: NoteCreate, current_user: User = Depends(get_current_user), session: Session = Depends(get_session)):
+    # Determine the folder for the note
+    folder_id = note.folder_id
+    if not folder_id:
+        # If no folder is specified, find the user's default folder
+        default_folder = session.exec(
+            select(Folder).where(Folder.owner_id == current_user.id, Folder.name == "default")
+        ).first()
+        if not default_folder:
+            # This should ideally not happen if the default folder is created upon registration
+            raise HTTPException(status_code=400, detail="Default folder not found for user.")
+        folder_id = default_folder.id
+
     # Call the new translation service, which returns a dict with 'type' and 'data'
     ai_response = translation_service.translate_text(note.text)
 
@@ -37,6 +49,7 @@ def create_note(note: NoteCreate, current_user: User = Depends(get_current_user)
         type=note_type,
         translation=note_data,
         owner_id=current_user.id,
+        folder_id=folder_id,
         tags=tags
     )
     
@@ -87,7 +100,8 @@ def update_note(
             "type": "word",
             "translation": None,
             "corrected_text": note_update.text,
-            "tags": note_update.tags # Pass tags along
+            "tags": note_update.tags, # Pass tags along
+            "folder_id": note_update.folder_id # Pass folder_id along
         }
         
         if ai_response:
