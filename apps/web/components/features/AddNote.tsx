@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, FormEvent, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, FormEvent, useEffect, useCallback } from "react";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
-import { useDisplayMode } from "@/contexts/DisplayModeContext";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,9 +31,10 @@ import {
 } from "@/components/ui/dialog";
 
 import { toast } from "sonner";
-import { Folder } from "@/types/notes";
+import { Note, Folder } from "@/types/notes";
 import { TagInput } from "./TagInput";
 import { ImportButton } from "./ImportButton";
+import { NoteItemDisplay } from "./NoteItemDisplay";
 
 const ADD_FOLDER_VALUE = "__add_folder__";
 
@@ -44,10 +44,10 @@ export function AddNote() {
   const [selectedFolderId, setSelectedFolderId] = useState<string>("");
   const [isAddFolderDialogOpen, setAddFolderDialogOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
+  const [previewNote, setPreviewNote] = useState<Note | null>(null);
 
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
-  const { displayMode, toggleDisplayMode } = useDisplayMode();
 
   const { data: folders = [] } = useQuery<Folder[]>({
     queryKey: ["folders"],
@@ -64,11 +64,17 @@ export function AddNote() {
     }
   }, [folders, selectedFolderId]);
 
-  const createNoteMutation = useMutation<unknown, Error, { text: string; tags: string[]; folder_id?: number }>({
+  const previewNoteMutation = useMutation<Note, Error, { text: string; folder_id?: number }>({
+    mutationFn: (data) => api.post("/notes/preview", data).then((res) => res.data),
+    onSuccess: (data) => {
+      setPreviewNote(data);
+    },
+  });
+
+  const createNoteMutation = useMutation<Note, Error, { text: string; tags: string[]; folder_id?: number }>({
     mutationFn: (data) => api.post("/notes", data).then((res) => res.data),
     onSuccess: () => {
-      setNewNoteText("");
-      setTags([]);
+      resetForm();
       queryClient.invalidateQueries({ queryKey: ["notes"] });
       toast.success("Note created successfully!");
     },
@@ -85,10 +91,30 @@ export function AddNote() {
     },
   });
 
-  const handleCreateNote = (e: FormEvent) => {
+  const handlePreview = (e: FormEvent) => {
     e.preventDefault();
     if (!newNoteText.trim()) return toast.warning("Note cannot be empty.");
-    createNoteMutation.mutate({ text: newNoteText, tags, folder_id: Number(selectedFolderId) });
+    previewNoteMutation.mutate({ text: newNoteText, folder_id: Number(selectedFolderId) });
+  };
+
+  const handleConfirmAndSave = () => {
+    if (!previewNote) return;
+    createNoteMutation.mutate({
+      text: newNoteText,
+      tags,
+      folder_id: Number(selectedFolderId),
+    });
+  };
+
+  const resetForm = useCallback(() => {
+    setNewNoteText("");
+    setTags([]);
+    setPreviewNote(null);
+    // Do not reset folder selection to keep it for the next note
+  }, []);
+
+  const handleCancelPreview = () => {
+    setPreviewNote(null);
   };
 
   const handleCreateFolder = () => {
@@ -107,50 +133,65 @@ export function AddNote() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleCreateNote} className="space-y-4">
-              <Input
-                placeholder="e.g., Ubiquitous"
-                value={newNoteText}
-                onChange={(e) => setNewNoteText(e.target.value)}
-                disabled={createNoteMutation.isPending}
-              />
-              <Select
-                value={selectedFolderId}
-                onValueChange={(value: string) => {
-                  if (value === ADD_FOLDER_VALUE) {
-                    setAddFolderDialogOpen(true);
-                  } else {
-                    setSelectedFolderId(value);
-                  }
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a folder" />
-                </SelectTrigger>
-                <SelectContent>
-                  {folders.map((folder) => (
-                    <SelectItem key={folder.id} value={folder.id.toString()}>
-                      {folder.name}
+            {!previewNote ? (
+              <form onSubmit={handlePreview} className="space-y-4">
+                <Input
+                  placeholder="e.g., Ubiquitous"
+                  value={newNoteText}
+                  onChange={(e) => setNewNoteText(e.target.value)}
+                  disabled={previewNoteMutation.isPending}
+                />
+                <Select
+                  value={selectedFolderId}
+                  onValueChange={(value: string) => {
+                    if (value === ADD_FOLDER_VALUE) {
+                      setAddFolderDialogOpen(true);
+                    } else {
+                      setSelectedFolderId(value);
+                    }
+                  }}
+                  disabled={previewNoteMutation.isPending}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a folder" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {folders.map((folder) => (
+                      <SelectItem key={folder.id} value={folder.id.toString()}>
+                        {folder.name}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value={ADD_FOLDER_VALUE} className="text-blue-600">
+                      + Add New Folder
                     </SelectItem>
-                  ))}
-                  <SelectItem value={ADD_FOLDER_VALUE} className="text-blue-600">
-                    + Add New Folder
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <TagInput
-                  tags={tags}
-                  setTags={setTags}
-                  placeholder="Add tags..."
-              />
-              <div className="flex items-center gap-2">
-                  <Button type="submit" disabled={createNoteMutation.isPending} className="flex-grow">
-                    {createNoteMutation.isPending ? "Saving..." : "Save Note"}
+                  </SelectContent>
+                </Select>
+                <TagInput
+                    tags={tags}
+                    setTags={setTags}
+                    placeholder="Add tags..."
+                    disabled={previewNoteMutation.isPending}
+                />
+                <div className="flex items-center gap-2">
+                    <Button type="submit" disabled={previewNoteMutation.isPending} className="flex-grow">
+                      {previewNoteMutation.isPending ? "Analyzing..." : "Preview"}
+                    </Button>
+                    <ImportButton />
+                </div>
+              </form>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-lg border border-dashed p-4">
+                    <NoteItemDisplay note={previewNote} onEdit={() => {}} onDelete={() => {}} isDeleting={false} />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={handleCancelPreview}>Cancel</Button>
+                  <Button onClick={handleConfirmAndSave} disabled={createNoteMutation.isPending}>
+                    {createNoteMutation.isPending ? "Saving..." : "Confirm & Save"}
                   </Button>
-                  <ImportButton />
+                </div>
               </div>
-            </form>
-
+            )}
           </CardContent>
         </Card>
       </div>

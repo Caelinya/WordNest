@@ -7,9 +7,10 @@ interface TagInputProps {
   tags: string[];
   setTags: (tags: string[]) => void;
   placeholder?: string;
+  disabled?: boolean;
 }
 
-export function TagInput({ tags, setTags, placeholder = "Add tags..." }: TagInputProps) {
+export function TagInput({ tags, setTags, placeholder = "Add tags...", disabled = false }: TagInputProps) {
   const [inputValue, setInputValue] = useState('');
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -38,9 +39,10 @@ export function TagInput({ tags, setTags, placeholder = "Add tags..." }: TagInpu
           <span key={tag} className="flex items-center gap-1 bg-muted text-muted-foreground px-2 py-1 rounded-full text-sm">
             {tag}
             <button
-              onClick={() => removeTag(tag)}
-              className="rounded-full hover:bg-background"
+              onClick={() => !disabled && removeTag(tag)}
+              className="rounded-full hover:bg-background disabled:opacity-50"
               aria-label={`Remove ${tag}`}
+              disabled={disabled}
             >
               <X className="h-3 w-3" />
             </button>
@@ -54,8 +56,9 @@ export function TagInput({ tags, setTags, placeholder = "Add tags..." }: TagInpu
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
+          disabled={disabled}
         />
-        <Button type="button" onClick={addTag} variant="outline">
+        <Button type="button" onClick={addTag} variant="outline" disabled={disabled}>
           Add
         </Button>
       </div>

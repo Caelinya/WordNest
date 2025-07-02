@@ -13,6 +13,41 @@ def get_session():
     with Session(engine) as session:
         yield session
 
+@router.post("/preview", response_model=NoteRead)
+def preview_note(note: NoteCreate, current_user: User = Depends(get_current_user), session: Session = Depends(get_session)):
+    """
+    Analyzes the note text and returns a preview of the note without saving it.
+    """
+    ai_response = translation_service.translate_text(note.text)
+
+    note_type = "word"
+    note_data = None
+    corrected_text = note.text
+    
+    if ai_response:
+        note_type = ai_response.get("type", "word")
+        note_data = ai_response.get("data")
+        corrected_text = ai_response.get("corrected_text", note.text)
+
+    # Note: We are creating a NoteRead object, not a DB model instance.
+    # It has a temporary ID and no saved tags.
+    preview_note = NoteRead(
+        id=-1,  # Temporary ID
+        text=note.text,
+        corrected_text=corrected_text,
+        type=note_type,
+        translation=note_data,
+        tags=[],  # No tags for preview
+        folder_id=note.folder_id
+    )
+
+    if note.folder_id:
+        folder = session.get(Folder, note.folder_id)
+        if folder and folder.owner_id == current_user.id:
+            preview_note.folder = folder
+    
+    return preview_note
+
 @router.post("", response_model=NoteRead)
 def create_note(note: NoteCreate, current_user: User = Depends(get_current_user), session: Session = Depends(get_session)):
     # Determine the folder for the note
