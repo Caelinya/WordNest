@@ -15,16 +15,25 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+interface AuthProviderProps {
+    children: ReactNode;
+    initialUser?: User | null;
+}
+
+export function AuthProvider({ children, initialUser = null }: AuthProviderProps) {
+  const [user, setUser] = useState<User | null>(initialUser);
+  const [isLoading, setIsLoading] = useState(!initialUser); // Only loading if no initial user
 
   useEffect(() => {
+    // If we have an initial user, we don't need to fetch on mount.
+    if (initialUser) return;
+
     const fetchUser = async () => {
       const token = getCookie('auth_token');
       if (token) {
         try {
-          const response = await api.get('/auth/users/me'); // This endpoint needs to be created
+          api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          const response = await api.get('/auth/users/me');
           setUser(response.data);
         } catch (error) {
           console.error("Failed to fetch user", error);
@@ -33,8 +42,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setIsLoading(false);
     };
+
     fetchUser();
-  }, []);
+  }, [initialUser]);
 
   const login = (token: string, userData: User) => {
     setUser(userData);
