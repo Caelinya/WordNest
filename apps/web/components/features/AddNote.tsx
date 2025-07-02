@@ -32,8 +32,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { toast } from "sonner";
-import { Note, Folder } from "@/types/notes";
-import { NoteItem } from "./NoteItem";
+import { Folder } from "@/types/notes";
 import { TagInput } from "./TagInput";
 import { ImportButton } from "./ImportButton";
 
@@ -50,12 +49,6 @@ export function AddNote() {
   const queryClient = useQueryClient();
   const { displayMode, toggleDisplayMode } = useDisplayMode();
 
-  const { data: notes = [], isLoading: isLoadingNotes } = useQuery<Note[]>({
-    queryKey: ["notes"],
-    queryFn: () => api.get("/notes").then((res) => res.data),
-    enabled: isAuthenticated,
-  });
-
   const { data: folders = [] } = useQuery<Folder[]>({
     queryKey: ["folders"],
     queryFn: () => api.get("/folders").then((res) => res.data),
@@ -71,9 +64,9 @@ export function AddNote() {
     }
   }, [folders, selectedFolderId]);
 
-  const createNoteMutation = useMutation<Note, Error, { text: string; tags: string[]; folder_id?: number }>({
+  const createNoteMutation = useMutation<unknown, Error, { text: string; tags: string[]; folder_id?: number }>({
     mutationFn: (data) => api.post("/notes", data).then((res) => res.data),
-    onSuccess: (newNote) => {
+    onSuccess: () => {
       setNewNoteText("");
       setTags([]);
       queryClient.invalidateQueries({ queryKey: ["notes"] });
@@ -158,31 +151,7 @@ export function AddNote() {
               </div>
             </form>
 
-            <div className="mt-8">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Your Notes</h3>
-              <Button variant="outline" size="sm" onClick={toggleDisplayMode}>
-                {displayMode === 'full' ? 'English-Only' : 'Show All'}
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {isLoadingNotes ? (
-                <p>Loading notes...</p>
-              ) : notes.length > 0 ? (
-                notes.map((note) => (
-                  <NoteItem key={note.id} note={note} />
-                ))
-              ) : (
-                <p className="text-muted-foreground">
-                  You haven't saved any notes yet.
-                </p>
-              )}
-            </div>
-          </div>
           </CardContent>
-          <CardFooter className="text-xs text-muted-foreground">
-            <p>{notes.length} notes in total.</p>
-          </CardFooter>
         </Card>
       </div>
 
