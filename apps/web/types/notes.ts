@@ -8,6 +8,11 @@ export interface Tag {
   color: string;
 }
 
+export interface Folder {
+  id: number;
+  name: string;
+}
+
 export interface Note {
   id: number;
   text: string;
@@ -15,6 +20,7 @@ export interface Note {
   type: "word" | "phrase" | "sentence";
   translation: WordAnalysis | PhraseAnalysis | SentenceAnalysis | null;
   tags: Tag[];
+  folder_id?: number;
 }
 
 export interface User {
