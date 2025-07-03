@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Feather } from "lucide-react";
+import { Logo } from "@/components/ui/Logo";
 
 export function Auth() {
   const [loginUsername, setLoginUsername] = useState("");
@@ -72,7 +72,7 @@ export function Auth() {
   return (
     <div className="w-full h-screen lg:grid lg:grid-cols-2">
       <div className="hidden bg-muted lg:flex lg:flex-col lg:items-center lg:justify-center p-10 text-center">
-          <Feather className="h-20 w-20 mb-6 text-primary" />
+          <Logo className="h-20 w-20 mb-6 text-primary" />
           <h1 className="text-4xl font-bold tracking-tighter">WordNest</h1>
           <p className="mt-4 text-lg text-muted-foreground">
             From passive notes to active knowledge.

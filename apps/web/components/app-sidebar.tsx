@@ -4,7 +4,6 @@ import * as React from "react"
 import Link from "next/link"
 import {
   BookOpen,
-  Feather,
   PlusCircle,
   Settings,
   Library,
@@ -15,6 +14,7 @@ import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import { ThemeToggle } from "@/components/ui/ThemeToggle"
 import { useAuth } from "@/contexts/AuthContext"
+import { Logo } from "@/components/ui/Logo"
 import {
   Sidebar,
   SidebarContent,
@@ -68,7 +68,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuButton size="lg" asChild>
               <Link href="/dashboard">
                 <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                  <Feather className="size-4" />
+                  <Logo className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">WordNest</span>
