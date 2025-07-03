@@ -30,6 +30,9 @@ jobs:
       - name: Run services in background
         run: docker compose up -d api web
 
+      - name: Display API service logs for debugging
+        run: docker compose logs api
+
       - name: Test API service is up
         run: curl --fail http://localhost:8000/
 
