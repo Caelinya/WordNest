@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme()
-  const [_, startTransition] = React.useTransition()
+  const [, startTransition] = React.useTransition()
 
   const toggleTheme = () => {
     startTransition(() => {

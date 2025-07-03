@@ -33,7 +33,7 @@ export function NoteList() {
           notes.map((note) => <NoteItem key={note.id} note={note} />)
         ) : (
           <p className="text-muted-foreground">
-            You haven't saved any notes yet.
+            You haven&apos;t saved any notes yet.
           </p>
         )}
       </div>

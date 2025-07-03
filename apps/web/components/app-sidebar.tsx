@@ -5,7 +5,6 @@ import Link from "next/link"
 import {
   BookOpen,
   Feather,
-  Home,
   PlusCircle,
   Settings,
   Library,
