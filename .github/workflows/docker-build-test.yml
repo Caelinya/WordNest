@@ -16,17 +16,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Create .env file for API
-        run: echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" > apps/api/.env
+      - name: Create .env file for API (Manual)
+        run: |
+          echo '${{ toJSON(secrets) }}' | jq -r 'to_entries[] | select(.key | startswith("API_")) | "\(.key | ltrimstr("API_"))=\(.value)"' > apps/api/.env
+
+      - name: Create .env file for Web (Manual)
+        run: |
+          echo '${{ toJSON(secrets) }}' | jq -r 'to_entries[] | select(.key | startswith("WEB_")) | "\(.key | ltrimstr("WEB_"))=\(.value)"' > apps/web/.env
 
       - name: Build docker images
         run: docker compose build
 
       - name: Run services in background
         run: docker compose up -d api web
-
-      - name: Wait for services to start
-        run: sleep 10
 
       - name: Test API service is up
         run: curl --fail http://localhost:8000/

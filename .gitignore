@@ -41,6 +41,7 @@ next-env.d.ts
 plan.md
 idea.md
 .roomodes
+upload_secrets.sh
 
 # Python cache
 __pycache__/
