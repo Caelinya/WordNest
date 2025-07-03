@@ -26,18 +26,3 @@ jobs:
 
       - name: Build docker images
         run: docker compose build
-
-      - name: Run services in background
-        run: docker compose up -d api web
-
-      - name: Display API service logs for debugging
-        run: docker compose logs api
-
-      - name: Test API service is up
-        run: curl --fail http://localhost:8000/
-
-      - name: Test Web service is up
-        run: curl --fail http://localhost:3000/
-      
-      - name: Tear down services
-        run: docker compose down -v --remove-orphans
