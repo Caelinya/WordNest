@@ -3,6 +3,8 @@ from pydantic import ConfigDict
 from sqlmodel import Field, SQLModel, Relationship, Column, UniqueConstraint
 from sqlalchemy.types import JSON
 from datetime import datetime
+from pgvector.sqlalchemy import Vector
+from numpy import ndarray
 
 
 class NoteTagLink(SQLModel, table=True):
@@ -56,6 +58,9 @@ class Note(SQLModel, table=True):
     corrected_text: str | None = Field(default=None)
     type: str = Field(index=True)  # AI-classified type: 'word', 'phrase', or 'sentence'
     translation: dict[str, Any] | None = Field(default=None, sa_column=Column(JSON))
+    vector: ndarray | None = Field(
+        default=None, sa_column=Column(Vector(384))
+    )  # Vector for semantic search
 
     # FSRS fields
     due: datetime = Field(default_factory=datetime.utcnow, index=True)
