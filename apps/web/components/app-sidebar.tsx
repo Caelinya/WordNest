@@ -13,6 +13,7 @@ import {
 
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
+import { ThemeToggle } from "@/components/ui/ThemeToggle"
 import { useAuth } from "@/contexts/AuthContext"
 import {
   Sidebar,
@@ -82,7 +83,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain items={navMain} />
       </SidebarContent>
       <SidebarFooter>
-         <NavUser user={user} />
+        <div className="mb-4 flex justify-center">
+          <ThemeToggle />
+        </div>
+        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   )

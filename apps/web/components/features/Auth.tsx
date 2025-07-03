@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { authApi } from "@/lib/api";
 import { useMutation } from "@tanstack/react-query";
@@ -25,6 +26,7 @@ export function Auth() {
   const [registerPassword, setRegisterPassword] = useState("");
   const [activeTab, setActiveTab] = useState("login");
   const { login } = useAuth();
+  const router = useRouter();
 
   const loginMutation = useMutation({
     mutationFn: authApi.login,
@@ -32,6 +34,7 @@ export function Auth() {
       const { access_token, user } = data;
       login(access_token, user);
       toast.success("Welcome back!");
+      router.push("/dashboard");
     },
     // onError is handled globally by the axios interceptor
   });
