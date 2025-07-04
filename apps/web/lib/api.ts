@@ -69,12 +69,14 @@ export const authApi = {
 };
 
 export const notesApi = {
-  search: async (query: string, isSemantic: boolean) => {
+  search: async (query: string, isSemantic: boolean, similarity: number) => {
     if (!query || !query.trim()) {
       return [];
     }
     const response = await api.get(
-      `/notes/search?q=${encodeURIComponent(query)}&semantic=${isSemantic}`
+      `/notes/search?q=${encodeURIComponent(
+        query
+      )}&semantic=${isSemantic}&similarity=${similarity}`
     );
     return response.data;
   },

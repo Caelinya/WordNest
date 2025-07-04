@@ -3,7 +3,7 @@ from sqlmodel import Session, select
 from .db import engine
 from .models import Note, User, Folder
 from .auth import get_current_user
-from .services import translation_service, tag_service, ai_service
+from .services import tag_service, ai_service
 from .schemas import NoteCreate, NoteUpdate, NoteRead
 from .crud import note_crud
 
@@ -18,7 +18,7 @@ def preview_note(note: NoteCreate, current_user: User = Depends(get_current_user
     """
     Analyzes the note text and returns a preview of the note without saving it.
     """
-    ai_response = translation_service.translate_text(note.text)
+    ai_response = ai_service.analyze_text(note.text)
 
     note_type = "word"
     note_data = None
@@ -63,7 +63,7 @@ def create_note(note: NoteCreate, current_user: User = Depends(get_current_user)
         folder_id = default_folder.id
 
     # Call the new translation service, which returns a dict with 'type' and 'data'
-    ai_response = translation_service.translate_text(note.text)
+    ai_response = ai_service.analyze_text(note.text)
 
     note_type = "word" # Default type
     note_data = None
@@ -108,6 +108,7 @@ def read_notes(current_user: User = Depends(get_current_user), session: Session 
 def search_notes_route(
     q: str,
     semantic: bool = True,
+    similarity: float = 0.5,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
@@ -131,7 +132,8 @@ def search_notes_route(
         owner_id=current_user.id,
         search_query=q,
         search_embedding=search_embedding,
-        semantic=semantic
+        semantic=semantic,
+        similarity=similarity
     )
 
     return notes
@@ -164,7 +166,7 @@ def update_note(
 
     if re_analyze and note_update.text:
         # AI-powered update: generate new analysis and text
-        ai_response = translation_service.translate_text(note_update.text)
+        ai_response = ai_service.analyze_text(note_update.text)
         
         update_data = {
             "text": note_update.text,
