@@ -41,3 +41,22 @@ def call_ai(system_prompt: str, user_prompt: str | None = None) -> dict | None:
     except Exception as e:
         print(f"An error occurred during the AI call: {e}")
         return None
+
+def get_embedding(text: str) -> list[float] | None:
+    """
+    Generates an embedding for the given text using the specified AI model.
+    """
+    if not client:
+        print("AI service is disabled. Skipping embedding generation.")
+        return None
+
+    try:
+        response = client.embeddings.create(
+            input=text,
+            model=settings.EMBEDDING_MODEL,
+        )
+        return response.data[0].embedding
+
+    except Exception as e:
+        print(f"An error occurred during embedding generation: {e}")
+        return None

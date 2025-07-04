@@ -3,7 +3,7 @@ from sqlmodel import Session, select
 from .db import engine
 from .models import Note, User, Folder
 from .auth import get_current_user
-from .services import translation_service, tag_service
+from .services import translation_service, tag_service, ai_service
 from .schemas import NoteCreate, NoteUpdate, NoteRead
 from .crud import note_crud
 
@@ -78,6 +78,9 @@ def create_note(note: NoteCreate, current_user: User = Depends(get_current_user)
     tags = tag_service.get_or_create_tags_db(db=session, owner=current_user, tag_names=note.tags)
     
     # Create the Note object with the new type and data fields
+    # Generate embedding for the note text
+    embedding = ai_service.get_embedding(note.text)
+
     db_note = Note(
         text=note.text,
         corrected_text=corrected_text,
@@ -85,7 +88,8 @@ def create_note(note: NoteCreate, current_user: User = Depends(get_current_user)
         translation=note_data,
         owner_id=current_user.id,
         folder_id=folder_id,
-        tags=tags
+        tags=tags,
+        vector=embedding
     )
     
     # Save to the database using the CRUD function
@@ -98,6 +102,38 @@ def create_note(note: NoteCreate, current_user: User = Depends(get_current_user)
 @router.get("", response_model=list[NoteRead])
 def read_notes(current_user: User = Depends(get_current_user), session: Session = Depends(get_session)):
     notes = note_crud.get_notes_by_owner(session=session, owner_id=current_user.id)
+    return notes
+
+@router.get("/search", response_model=list[NoteRead])
+def search_notes_route(
+    q: str,
+    semantic: bool = True,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """
+    Search for notes by a query string.
+    Performs a hybrid search combining semantic and keyword matching.
+    """
+    if not q or not q.strip():
+        raise HTTPException(status_code=400, detail="Search query cannot be empty.")
+
+    search_embedding = None
+    if semantic:
+        # 1. Get the embedding for the search query if semantic search is enabled
+        search_embedding = ai_service.get_embedding(q)
+        if not search_embedding:
+            raise HTTPException(status_code=500, detail="Could not generate embedding for the search query.")
+
+    # 2. Call the CRUD function to perform the search
+    notes = note_crud.search_notes(
+        session=session,
+        owner_id=current_user.id,
+        search_query=q,
+        search_embedding=search_embedding,
+        semantic=semantic
+    )
+
     return notes
 
 @router.delete("/{note_id}", status_code=204)
@@ -154,6 +190,8 @@ def update_note(
         # Also sync the corrected_text to match the user's new raw text
         if note_update.text is not None:
             updated_note.corrected_text = updated_note.text
+            # Also regenerate embedding if text is updated
+            updated_note.vector = ai_service.get_embedding(updated_note.text)
 
 
     session.commit()

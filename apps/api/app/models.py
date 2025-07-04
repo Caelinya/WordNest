@@ -59,7 +59,7 @@ class Note(SQLModel, table=True):
     type: str = Field(index=True)  # AI-classified type: 'word', 'phrase', or 'sentence'
     translation: dict[str, Any] | None = Field(default=None, sa_column=Column(JSON))
     vector: ndarray | None = Field(
-        default=None, sa_column=Column(Vector(384))
+        default=None, sa_column=Column(Vector(768))
     )  # Vector for semantic search
 
     # FSRS fields

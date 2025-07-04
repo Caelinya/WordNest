@@ -67,3 +67,17 @@ export const authApi = {
     return response.data;
   }
 };
+
+export const notesApi = {
+  search: async (query: string, isSemantic: boolean) => {
+    if (!query || !query.trim()) {
+      return [];
+    }
+    const response = await api.get(
+      `/notes/search?q=${encodeURIComponent(query)}&semantic=${isSemantic}`
+    );
+    return response.data;
+  },
+  // We can add other note-related API calls here in the future
+  // e.g., getNotes, createNote, etc.
+};

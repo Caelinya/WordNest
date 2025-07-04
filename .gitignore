@@ -42,6 +42,7 @@ plan.md
 idea.md
 .roomodes
 upload_secrets.sh
+.roo/
 
 # Python cache
 __pycache__/

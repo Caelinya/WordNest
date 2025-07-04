@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import json
 
 # Adjust the import path based on the project structure
-from app.services import translation_service
+from app.services import translation_service, ai_service
 from app.services.translation_service import AIResponse
 
 # --- Mock Data ---
@@ -11,6 +11,7 @@ from app.services.translation_service import AIResponse
 # 1. Mock data for 'word' type
 MOCK_WORD_RESPONSE_STR = json.dumps({
     "type": "word",
+    "corrected_text": "resilience",
     "data": {
         "phonetic": "/rɪˈzɪliəns/",
         "definitions": [{
@@ -29,6 +30,7 @@ EXPECTED_WORD_DICT = json.loads(MOCK_WORD_RESPONSE_STR)
 # 2. Mock data for 'phrase' type
 MOCK_PHRASE_RESPONSE_STR = json.dumps({
     "type": "phrase",
+    "corrected_text": "on the ball",
     "data": {
         "explanation": "To be alert, quick to understand, and competent.",
         "translation": "反应快; 精明能干",
@@ -43,6 +45,7 @@ EXPECTED_PHRASE_DICT = json.loads(MOCK_PHRASE_RESPONSE_STR)
 # 3. Mock data for 'sentence' type
 MOCK_SENTENCE_RESPONSE_STR = json.dumps({
     "type": "sentence",
+    "corrected_text": "The quick brown fox jumps over the lazy dog.",
     "data": {
         "translation": "这只敏捷的棕色狐狸跳过了那只懒狗。",
         "keywords": ["quick", "brown", "fox", "jumps", "lazy", "dog"],
@@ -64,7 +67,7 @@ def mock_openai_client(monkeypatch, response_str: str):
     mock_client = MagicMock()
     mock_client.chat.completions.create = mock_create
     
-    monkeypatch.setattr(translation_service, "client", mock_client)
+    monkeypatch.setattr(ai_service, "client", mock_client)
     return mock_create
 
 def test_translate_word_success(monkeypatch):
@@ -104,7 +107,7 @@ def test_translate_text_api_error(monkeypatch):
     mock_client = MagicMock()
     mock_client.chat.completions.create = mock_create
     
-    monkeypatch.setattr(translation_service, "client", mock_client)
+    monkeypatch.setattr(ai_service, "client", mock_client)
 
     result = translation_service.translate_text("test")
     assert result is None
@@ -118,7 +121,7 @@ def test_translate_bad_json_response(monkeypatch):
 
 def test_translate_text_client_not_configured(monkeypatch):
     """Test that the function returns None if the client is not configured."""
-    monkeypatch.setattr(translation_service, "client", None)
+    monkeypatch.setattr(ai_service, "client", None)
     
     result = translation_service.translate_text("test")
     assert result is None

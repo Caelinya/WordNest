@@ -2,19 +2,20 @@ import pytest
 import os
 from pydantic import ValidationError, BaseModel
 
-from app.services import translation_service
+from app.services import translation_service, ai_service
 # Import the new, correct Pydantic model
 from app.services.translation_service import AIResponse
 
-# This marker skips the test unless the --run-integration flag is provided
-# and the required API key is available.
-requires_api_key = pytest.mark.skipif(
-    not os.getenv("API_KEY"), reason="API_KEY environment variable not set"
+# To run integration tests, set the environment variable RUN_INTEGRATION_TESTS to "true"
+RUN_INTEGRATION_TESTS = os.getenv('RUN_INTEGRATION_TESTS', 'false').lower() == 'true'
+
+requires_integration = pytest.mark.skipif(
+    not RUN_INTEGRATION_TESTS, reason="Skipping integration tests"
 )
 
 def _run_translation_test(text_input: str, expected_type: str):
     """Helper function to run an integration test for a given text and expected type."""
-    assert translation_service.client is not None, "Translation client is not initialized. Check API_KEY."
+    assert ai_service.client is not None, "AI service client is not initialized. Check your .env file."
     
     print(f"\n--- Making REAL API call for a '{expected_type}': '{text_input}' ---")
 
@@ -50,19 +51,19 @@ def _run_translation_test(text_input: str, expected_type: str):
         pytest.fail(f"An unexpected error occurred during the API call: {e}")
 
 @pytest.mark.integration
-@requires_api_key
+@requires_integration
 def test_integration_word():
     """Integration test for a 'word' type input."""
     _run_translation_test("resilience", "word")
 
 @pytest.mark.integration
-@requires_api_key
+@requires_integration
 def test_integration_phrase():
     """Integration test for a 'phrase' type input."""
     _run_translation_test("on the ball", "phrase")
 
 @pytest.mark.integration
-@requires_api_key
+@requires_integration
 def test_integration_sentence():
     """Integration test for a 'sentence' type input."""
     _run_translation_test("The future is not set, there is no fate but what we make for ourselves.", "sentence")

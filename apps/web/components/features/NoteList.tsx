@@ -1,39 +1,35 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/contexts/AuthContext";
 import { useDisplayMode } from "@/contexts/DisplayModeContext";
-import api from "@/lib/api";
 import { Note } from "@/types/notes";
 import { NoteItem } from "./NoteItem";
 import { Button } from "@/components/ui/button";
 
-export function NoteList() {
-  const { isAuthenticated } = useAuth();
-  const { displayMode, toggleDisplayMode } = useDisplayMode();
+interface NoteListProps {
+  notes: Note[];
+  isLoading: boolean;
+  totalNotes: number; // To show the total count even when search results are displayed
+}
 
-  const { data: notes = [], isLoading: isLoadingNotes } = useQuery<Note[]>({
-    queryKey: ["notes"],
-    queryFn: () => api.get("/notes").then((res) => res.data),
-    enabled: isAuthenticated,
-  });
+export function NoteList({ notes, isLoading, totalNotes }: NoteListProps) {
+  const { displayMode, toggleDisplayMode } = useDisplayMode();
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Your Notes ({notes.length})</h2>
+        <h2 className="text-2xl font-bold">Your Notes ({totalNotes})</h2>
         <Button variant="outline" size="sm" onClick={toggleDisplayMode}>
           {displayMode === "full" ? "English-Only" : "Show All"}
         </Button>
       </div>
       <div className="space-y-2">
-        {isLoadingNotes ? (
+        {isLoading ? (
           <p>Loading notes...</p>
         ) : notes.length > 0 ? (
           notes.map((note) => <NoteItem key={note.id} note={note} />)
         ) : (
           <p className="text-muted-foreground">
-            You haven&apos;t saved any notes yet.
+            No notes found. Try adjusting your search or add some new notes.
           </p>
         )}
       </div>

@@ -11,8 +11,9 @@ class Settings(BaseSettings):
     API_KEY: str
     
     # --- AI Service Endpoint (Optional) ---
-    BASE_URL: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
-    AI_MODEL: str = "gemini-2.0-flash"
+    BASE_URL: str
+    AI_MODEL: str
+    EMBEDDING_MODEL: str
 
     # --- Database (Optional) ---
     DATABASE_URL: str | None = None
