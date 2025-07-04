@@ -72,9 +72,14 @@ def search_notes(
     semantic_search_results = []
     if semantic and search_embedding:
         # 1. Semantic Search (only if enabled)
+        # We add a distance threshold to filter out irrelevant results.
+        # Cosine distance: 0 = identical, 1 = dissimilar, 2 = opposite.
+        # A threshold of 0.5 is a reasonable starting point.
+        distance_threshold = 0.5
         semantic_search_statement = (
             select(Note)
             .where(Note.owner_id == owner_id)
+            .where(Note.vector.cosine_distance(search_embedding) < distance_threshold)
             .order_by(Note.vector.cosine_distance(search_embedding))
             .limit(20)
         )
