@@ -1,6 +1,7 @@
 import json
+import backoff
 from enum import Enum
-from openai import OpenAI
+from openai import OpenAI, APIError, RateLimitError, APITimeoutError, APIConnectionError
 from pydantic import BaseModel
 from typing import List, Union, Optional
 
@@ -134,9 +135,10 @@ The "data" object must contain "translation", "keywords", and "grammar_analysis"
 
 # --- Public Service Functions ---
 
+@backoff.on_exception(backoff.expo, (RateLimitError, APITimeoutError, APIConnectionError), max_tries=3)
 def get_embedding(text: str) -> list[float] | None:
     """
-    Generates an embedding for the given text.
+    Generates an embedding for the given text with retry logic.
     """
     if not client:
         print("AI service is disabled. Skipping embedding generation.")
@@ -148,21 +150,23 @@ def get_embedding(text: str) -> list[float] | None:
             model=settings.EMBEDDING_MODEL,
         )
         return response.data[0].embedding
-
+    except APIError as e:
+        print(f"OpenAI APIError during embedding generation: {e}")
+        return None
     except Exception as e:
-        print(f"An error occurred during embedding generation: {e}")
+        print(f"An unexpected error occurred during embedding generation: {e}")
         return None
 
+@backoff.on_exception(backoff.expo, (RateLimitError, APITimeoutError, APIConnectionError), max_tries=3)
 def analyze_text(text: str) -> dict | None:
     """
-    Analyzes text and returns a structured analysis using the Pydantic model.
+    Analyzes text with retry logic and returns a structured analysis.
     """
     if not client:
         print("AI service is disabled. Skipping text analysis.")
         return None
     
     try:
-        # Reverting to the .create() method to bypass compatibility issues with the .parse() helper.
         completion = client.chat.completions.create(
             model=settings.AI_MODEL,
             messages=[
@@ -182,6 +186,12 @@ def analyze_text(text: str) -> dict | None:
         validated_obj = AIAnalysisResponse.model_validate(json_response)
         return validated_obj.model_dump()
 
+    except APIError as e:
+        print(f"OpenAI APIError during text analysis: {e}")
+        return None
+    except json.JSONDecodeError as e:
+        print(f"Failed to decode JSON from AI response: {e}")
+        return None
     except Exception as e:
-        print(f"An error occurred during text analysis: {e}")
+        print(f"An unexpected error occurred during text analysis: {e}")
         return None

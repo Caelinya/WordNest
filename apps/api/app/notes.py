@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
+from typing import List
 from .db import engine
 from .models import Note, User, Folder
 from .auth import get_current_user
-from .services import tag_service, ai_service
+from .services import note_service, ai_service
 from .schemas import NoteCreate, NoteUpdate, NoteRead
 from .crud import note_crud
 
@@ -50,54 +51,10 @@ def preview_note(note: NoteCreate, current_user: User = Depends(get_current_user
 
 @router.post("", response_model=NoteRead)
 def create_note(note: NoteCreate, current_user: User = Depends(get_current_user), session: Session = Depends(get_session)):
-    # Determine the folder for the note
-    folder_id = note.folder_id
-    if not folder_id:
-        # If no folder is specified, find the user's default folder
-        default_folder = session.exec(
-            select(Folder).where(Folder.owner_id == current_user.id, Folder.name == "default")
-        ).first()
-        if not default_folder:
-            # This should ideally not happen if the default folder is created upon registration
-            raise HTTPException(status_code=400, detail="Default folder not found for user.")
-        folder_id = default_folder.id
-
-    # Call the new translation service, which returns a dict with 'type' and 'data'
-    ai_response = ai_service.analyze_text(note.text)
-
-    note_type = "word" # Default type
-    note_data = None
-    corrected_text = note.text # Default to original text
-
-    if ai_response:
-        note_type = ai_response.get("type", "word")
-        note_data = ai_response.get("data")
-        corrected_text = ai_response.get("corrected_text", note.text)
-
-    # Get or create tags
-    tags = tag_service.get_or_create_tags_db(db=session, owner=current_user, tag_names=note.tags)
-    
-    # Create the Note object with the new type and data fields
-    # Generate embedding for the note text
-    embedding = ai_service.get_embedding(note.text)
-
-    db_note = Note(
-        text=note.text,
-        corrected_text=corrected_text,
-        type=note_type,
-        translation=note_data,
-        owner_id=current_user.id,
-        folder_id=folder_id,
-        tags=tags,
-        vector=embedding
-    )
-    
-    # Save to the database using the CRUD function
-    created_note = note_crud.create_note_db(session=session, note=db_note)
-    session.commit()
-    session.refresh(created_note)
-    
-    return created_note
+    """
+    Creates a new note by calling the note service.
+    """
+    return note_service.create_note_service(session=session, note_in=note, owner=current_user)
 
 @router.get("", response_model=list[NoteRead])
 def read_notes(current_user: User = Depends(get_current_user), session: Session = Depends(get_session)):
@@ -106,34 +63,38 @@ def read_notes(current_user: User = Depends(get_current_user), session: Session 
 
 @router.get("/search", response_model=list[NoteRead])
 def search_notes_route(
-    q: str,
+    q: str | None = None,
     semantic: bool = True,
     similarity: float = 0.5,
+    folder_id: int | None = None,
+    tags: List[str] | None = Query(None),
+    note_type: str | None = None,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """
-    Search for notes by a query string.
-    Performs a hybrid search combining semantic and keyword matching.
+    Search for notes with advanced filtering.
     """
-    if not q or not q.strip():
-        raise HTTPException(status_code=400, detail="Search query cannot be empty.")
+    if not q and not folder_id and not tags and not note_type:
+        raise HTTPException(status_code=400, detail="At least one search or filter parameter is required.")
 
     search_embedding = None
-    if semantic:
-        # 1. Get the embedding for the search query if semantic search is enabled
+    if q and semantic:
         search_embedding = ai_service.get_embedding(q)
         if not search_embedding:
-            raise HTTPException(status_code=500, detail="Could not generate embedding for the search query.")
+            # Non-fatal, semantic search will just be skipped
+            print(f"Could not generate embedding for the search query: {q}")
 
-    # 2. Call the CRUD function to perform the search
     notes = note_crud.search_notes(
         session=session,
         owner_id=current_user.id,
         search_query=q,
         search_embedding=search_embedding,
         semantic=semantic,
-        similarity=similarity
+        similarity=similarity,
+        folder_id=folder_id,
+        tags=tags,
+        note_type=note_type
     )
 
     return notes
@@ -158,44 +119,18 @@ def update_note(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
+    """
+    Updates a note by calling the note service.
+    """
     db_note = note_crud.get_note(session=session, note_id=note_id)
     if not db_note:
         raise HTTPException(status_code=404, detail="Note not found")
     if db_note.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to edit this note")
 
-    if re_analyze and note_update.text:
-        # AI-powered update: generate new analysis and text
-        ai_response = ai_service.analyze_text(note_update.text)
-        
-        update_data = {
-            "text": note_update.text,
-            "type": "word",
-            "translation": None,
-            "corrected_text": note_update.text,
-            "tags": note_update.tags, # Pass tags along
-            "folder_id": note_update.folder_id # Pass folder_id along
-        }
-        
-        if ai_response:
-            update_data["type"] = ai_response.get("type", "word")
-            update_data["translation"] = ai_response.get("data")
-            update_data["corrected_text"] = ai_response.get("corrected_text", note_update.text)
-            
-        # Create a NoteUpdate instance with all the new data
-        update_payload = NoteUpdate.model_validate(update_data)
-        updated_note = note_crud.update_note_db(session=session, db_note=db_note, note_in=update_payload)
-
-    else:
-        # Simple update: just save the text and tags from the request
-        updated_note = note_crud.update_note_db(session=session, db_note=db_note, note_in=note_update)
-        # Also sync the corrected_text to match the user's new raw text
-        if note_update.text is not None:
-            updated_note.corrected_text = updated_note.text
-            # Also regenerate embedding if text is updated
-            updated_note.vector = ai_service.get_embedding(updated_note.text)
-
-
-    session.commit()
-    session.refresh(updated_note)
-    return updated_note
+    return note_service.update_note_service(
+        session=session,
+        db_note=db_note,
+        note_in=note_update,
+        re_analyze=re_analyze
+    )

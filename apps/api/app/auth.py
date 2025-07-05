@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 from datetime import timedelta, datetime
 from .db import engine
@@ -63,35 +64,39 @@ def get_current_user(token: str = Depends(oauth2_scheme), session: Session = Dep
 # --- API Endpoints ---
 @router.post("/register", response_model=UserRead)
 def register(user: UserCreate, session: Session = Depends(get_session)):
-    # Check if username or email already exists
-    existing_user = session.exec(
-        select(User).where(
-            (User.username == user.username) | (User.email == user.email)
-        )
-    ).first()
-    if existing_user:
-        if existing_user.username == user.username:
-            raise HTTPException(status_code=400, detail="Username already registered")
-        if existing_user.email == user.email:
-            raise HTTPException(status_code=400, detail="Email already registered")
-
     hashed_password = get_password_hash(user.password)
     db_user = User(
         username=user.username,
         email=user.email,
         hashed_password=hashed_password
     )
-    
-    session.add(db_user)
-    session.commit()
-    session.refresh(db_user)
 
-    # Create a default folder for the new user
-    default_folder = Folder(name="default", owner_id=db_user.id)
-    session.add(default_folder)
-    session.commit()
-    
-    return db_user
+    try:
+        session.add(db_user)
+        session.flush() # Use flush to get the db_user.id before commit
+
+        # Create a default folder for the new user in the same transaction
+        default_folder = Folder(name="default", owner_id=db_user.id)
+        session.add(default_folder)
+        
+        session.commit()
+        session.refresh(db_user)
+        
+        return db_user
+
+    except IntegrityError:
+        session.rollback()
+        # Check which constraint was violated
+        existing_user_by_username = session.exec(select(User).where(User.username == user.username)).first()
+        if existing_user_by_username:
+            raise HTTPException(status_code=400, detail="Username already registered")
+        
+        existing_user_by_email = session.exec(select(User).where(User.email == user.email)).first()
+        if existing_user_by_email:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        
+        # If for some other reason, raise a generic error
+        raise HTTPException(status_code=500, detail="An unexpected error occurred during registration.")
 
 @router.post("/token", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(get_session)):

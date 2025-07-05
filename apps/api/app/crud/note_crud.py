@@ -1,9 +1,9 @@
 import sqlalchemy as sa
 from sqlmodel import Session, select
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy import or_
 from pgvector.sqlalchemy import Vector
-from ..models import Note, User
+from ..models import Note, User, Tag
 from ..schemas import NoteUpdate
 from ..services import tag_service
 
@@ -61,52 +61,60 @@ def search_notes(
     *,
     session: Session,
     owner_id: int,
-    search_query: str,
+    search_query: str | None,
     semantic: bool,
     similarity: float,
+    folder_id: int | None,
+    tags: list[str] | None,
+    note_type: str | None,
     search_embedding: list[float] | None = None
 ) -> list[Note]:
     """
-    Performs a hybrid search for notes for a specific user.
-    Combines semantic vector search with keyword-based full-text search.
+    Performs a hybrid search with advanced filtering for notes.
     """
-    semantic_search_results = []
-    if semantic and search_embedding:
-        # 1. Semantic Search (only if enabled)
-        # We use a dynamic distance threshold from the API.
-        semantic_search_statement = (
-            select(Note)
-            .where(Note.owner_id == owner_id)
-            .where(Note.vector.cosine_distance(search_embedding) < similarity)
-            .order_by(Note.vector.cosine_distance(search_embedding))
-            .limit(20)
-        )
-        semantic_search_results = session.exec(semantic_search_statement).all()
-
-    # 2. Keyword Search
-    # This finds notes where the query appears as a substring in the text or translation.
-    # The translation field is JSON, so we cast it to text to search within it.
-    keyword_search_statement = (
+    # Base query with owner and necessary joins/loads
+    base_query = (
         select(Note)
         .where(Note.owner_id == owner_id)
-        .where(
-            or_(
-                Note.text.ilike(f"%{search_query}%"),
-                Note.corrected_text.ilike(f"%{search_query}%"),
-                Note.translation.cast(sa.Text).ilike(f"%{search_query}%")
-            )
+        .options(selectinload(Note.tags), joinedload(Note.folder))
+    )
+
+    # Apply filters
+    if folder_id:
+        base_query = base_query.where(Note.folder_id == folder_id)
+    if note_type:
+        base_query = base_query.where(Note.type == note_type)
+    if tags:
+        base_query = base_query.join(Note.tags).where(Tag.name.in_(tags))
+
+    # If no search query, return filtered results
+    if not search_query:
+        return session.exec(base_query).all()
+
+    # --- Hybrid Search Logic ---
+    semantic_search_results = []
+    if semantic and search_embedding:
+        # Semantic search on the filtered results
+        semantic_query = base_query.where(Note.vector.cosine_distance(search_embedding) < similarity)
+        semantic_query = semantic_query.order_by(Note.vector.cosine_distance(search_embedding)).limit(20)
+        semantic_search_results = session.exec(semantic_query).all()
+
+    # Keyword search on the filtered results
+    keyword_query = base_query.where(
+        or_(
+            Note.text.ilike(f"%{search_query}%"),
+            Note.corrected_text.ilike(f"%{search_query}%"),
+            Note.translation.cast(sa.Text).ilike(f"%{search_query}%"),
         )
     )
-    keyword_search_results = session.exec(keyword_search_statement).all()
+    keyword_search_results = session.exec(keyword_query).all()
 
-    # 3. Combine and de-duplicate results
-    # A simple way is to use a dictionary with note IDs to ensure uniqueness.
-    # The order from the semantic search is preserved first.
+    # Combine and de-duplicate results
     combined_results = {}
     for note in semantic_search_results:
         combined_results[note.id] = note
     for note in keyword_search_results:
         if note.id not in combined_results:
             combined_results[note.id] = note
-    
+
     return list(combined_results.values())
