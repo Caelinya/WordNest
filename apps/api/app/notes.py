@@ -64,10 +64,10 @@ def read_notes(current_user: User = Depends(get_current_user), session: Session 
 @router.get("/search", response_model=list[NoteRead])
 def search_notes_route(
     q: str | None = None,
-    semantic: bool = True,
+    semantic: bool = False,
     similarity: float = 0.5,
     folder_id: int | None = None,
-    tags: List[str] | None = Query(None),
+    tags: List[str] = Query(None),
     note_type: str | None = None,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
@@ -75,8 +75,10 @@ def search_notes_route(
     """
     Search for notes with advanced filtering.
     """
+    # Allow search without a query string if filters are present
     if not q and not folder_id and not tags and not note_type:
-        raise HTTPException(status_code=400, detail="At least one search or filter parameter is required.")
+        # If there's no query and no filters, return all notes for the user
+        return note_crud.get_notes_by_owner(session=session, owner_id=current_user.id)
 
     search_embedding = None
     if q and semantic:

@@ -69,17 +69,52 @@ export const authApi = {
 };
 
 export const notesApi = {
-  search: async (query: string, isSemantic: boolean, similarity: number) => {
-    if (!query || !query.trim()) {
-      return [];
+  search: async (params: {
+    q?: string;
+    semantic?: boolean;
+    similarity?: number;
+    folder_id?: number;
+    tags?: string[];
+    note_type?: string;
+  }) => {
+    const searchParams = new URLSearchParams();
+    if (params.q) {
+      searchParams.append('q', params.q);
     }
-    const response = await api.get(
-      `/notes/search?q=${encodeURIComponent(
-        query
-      )}&semantic=${isSemantic}&similarity=${similarity}`
-    );
+    if (params.semantic !== undefined) {
+      searchParams.append('semantic', String(params.semantic));
+    }
+    if (params.similarity !== undefined) {
+      searchParams.append('similarity', String(params.similarity));
+    }
+    if (params.folder_id) {
+      searchParams.append('folder_id', String(params.folder_id));
+    }
+    if (params.tags && params.tags.length > 0) {
+      params.tags.forEach(tag => searchParams.append('tags', tag));
+    }
+    if (params.note_type) {
+      searchParams.append('note_type', params.note_type);
+    }
+    
+    const queryString = searchParams.toString();
+    const response = await api.get(`/notes/search?${queryString}`);
     return response.data;
   },
   // We can add other note-related API calls here in the future
   // e.g., getNotes, createNote, etc.
 };
+
+export const foldersApi = {
+  getAll: async () => {
+    const response = await api.get('/folders');
+    return response.data;
+  }
+}
+
+export const tagsApi = {
+  getAll: async () => {
+    const response = await api.get('/tags');
+    return response.data;
+  }
+}

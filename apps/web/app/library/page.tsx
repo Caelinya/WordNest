@@ -11,13 +11,19 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import api from "@/lib/api";
-import { notesApi } from "@/lib/api";
-import { Note } from "@/types/notes";
+import { notesApi, foldersApi, tagsApi } from "@/lib/api";
+import type { Note, Folder, Tag } from "@/types/notes";
 
 // A custom hook for debouncing a value
 function useDebounce<T>(value: T, delay: number): T {
@@ -39,28 +45,47 @@ function useDebounce<T>(value: T, delay: number): T {
 export default function LibraryPage() {
   const { isAuthenticated } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [isSemanticSearch, setIsSemanticSearch] = useState(true);
+  const [isSemanticSearch, setIsSemanticSearch] = useState(false);
   const [similarity, setSimilarity] = useState(0.4);
+  const [folderId, setFolderId] = useState<string>("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [noteType, setNoteType] = useState<string>("");
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const debouncedSimilarity = useDebounce(similarity, 200);
 
-  // Query for fetching all notes (to get the total count)
-  const { data: allNotes = [] } = useQuery<Note[]>({
-    queryKey: ["notes", "all"],
-    queryFn: () => api.get("/notes").then((res) => res.data),
+  const searchParams = {
+    q: debouncedSearchQuery,
+    semantic: isSemanticSearch,
+    similarity: debouncedSimilarity,
+    folder_id: folderId && folderId !== 'all' ? parseInt(folderId) : undefined,
+    tags: selectedTags,
+    note_type: noteType && noteType !== 'all' ? noteType : undefined,
+  };
+
+  const { data: notes, isLoading } = useQuery<Note[]>({
+    queryKey: ["notes", "search", searchParams],
+    queryFn: () => notesApi.search(searchParams),
     enabled: isAuthenticated,
   });
   
-  // Query for searching notes
-  const { data: searchedNotes, isLoading: isSearchLoading } = useQuery<Note[]>({
-    queryKey: ["notes", "search", debouncedSearchQuery, isSemanticSearch, debouncedSimilarity],
-    queryFn: () => notesApi.search(debouncedSearchQuery, isSemanticSearch, debouncedSimilarity),
-    enabled: isAuthenticated && !!debouncedSearchQuery,
+  const { data: folders = [] } = useQuery<Folder[]>({
+    queryKey: ["folders"],
+    queryFn: foldersApi.getAll,
+    enabled: isAuthenticated,
   });
 
-  const isLoading = isSearchLoading;
-  const notesToShow = debouncedSearchQuery ? searchedNotes || [] : allNotes;
+  const { data: tags = [] } = useQuery<Tag[]>({
+    queryKey: ["tags"],
+    queryFn: tagsApi.getAll,
+    enabled: isAuthenticated,
+  });
+  
+  const { data: allNotes = [] } = useQuery<Note[]>({
+    queryKey: ["notes", "all"],
+    queryFn: () => notesApi.search({}), // fetch all notes initially
+    enabled: isAuthenticated,
+  });
 
   return (
     <div className="container mx-auto p-4 sm:p-8">
@@ -72,44 +97,77 @@ export default function LibraryPage() {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full text-lg"
         />
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <Switch 
-              id="semantic-search-toggle" 
-              checked={isSemanticSearch}
-              onCheckedChange={setIsSemanticSearch}
-            />
-            <Label htmlFor="semantic-search-toggle">Semantic Search</Label>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Select value={folderId} onValueChange={setFolderId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filter by folder..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Folders</SelectItem>
+              {folders.map((folder) => (
+                <SelectItem key={folder.id} value={String(folder.id)}>
+                  {folder.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          <Input
+            placeholder="Filter by tags (comma-separated)..."
+            onChange={(e) => setSelectedTags(e.target.value.split(',').map(t => t.trim()).filter(Boolean))}
+          />
+          
+          <Select value={noteType} onValueChange={setNoteType}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filter by type..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="word">Word</SelectItem>
+              <SelectItem value="sentence">Sentence</SelectItem>
+              <SelectItem value="phrase">Phrase</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+              <Switch
+                id="semantic-search-toggle"
+                checked={isSemanticSearch}
+                onCheckedChange={setIsSemanticSearch}
+                disabled={!searchQuery}
+              />
+              <Label htmlFor="semantic-search-toggle">Semantic Search</Label>
+            </div>
+            {isSemanticSearch && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1 text-muted-foreground">
+                    <Settings2 className="h-4 w-4" />
+                    <span>{similarity.toFixed(2)}</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-48 p-4">
+                  <div className="space-y-4">
+                    <Label className="text-sm">Similarity Threshold</Label>
+                    <Slider
+                      value={[similarity]}
+                      onValueChange={(value) => setSimilarity(value[0])}
+                      min={0.1}
+                      max={1}
+                      step={0.05}
+                    />
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
           </div>
-          {isSemanticSearch && (
-             <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1 text-muted-foreground">
-                  <Settings2 className="h-4 w-4" />
-                   <span>{similarity.toFixed(2)}</span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-48 p-4">
-                 <div className="space-y-4">
-                  <Label className="text-sm">Similarity Threshold</Label>
-                  <Slider
-                    value={[similarity]}
-                    onValueChange={(value) => setSimilarity(value[0])}
-                    min={0.1}
-                    max={1}
-                    step={0.05}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Lower values = stricter matching.
-                  </p>
-                </div>
-              </PopoverContent>
-            </Popover>
-          )}
+          {tags.length > 0 && <p className="text-sm text-muted-foreground">Available tags: {tags.map(t => t.name).join(', ')}</p>}
         </div>
       </div>
-      <NoteList 
-        notes={notesToShow}
+      <NoteList
+        notes={notes || []}
         isLoading={isLoading}
         totalNotes={allNotes.length}
       />

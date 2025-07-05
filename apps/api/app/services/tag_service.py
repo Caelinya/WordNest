@@ -61,3 +61,10 @@ def get_or_create_tags_db(db: Session, owner: User, tag_names: List[str]) -> Lis
             db.refresh(tag)
             
     return tags_to_return
+
+def get_tags_by_owner(*, db: Session, owner_id: int) -> List[Tag]:
+    """
+    Get all tags for a specific user.
+    """
+    statement = select(Tag).where(Tag.owner_id == owner_id).order_by(Tag.name)
+    return db.exec(statement).all()

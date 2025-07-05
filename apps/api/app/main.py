@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
-from . import auth, notes, parser, folders
+from . import auth, notes, parser, folders, tags
 from .db import engine
 from .models import SQLModel
 
@@ -20,6 +20,7 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(notes.router, prefix="/notes", tags=["notes"])
 app.include_router(parser.router, prefix="/parser", tags=["parser"])
 app.include_router(folders.router, prefix="/folders", tags=["folders"])
+app.include_router(tags.router, prefix="/tags", tags=["tags"])
 
 @app.get("/")
 def read_root():

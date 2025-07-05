@@ -62,6 +62,8 @@ class Note(SQLModel, table=True):
         default=None, sa_column=Column(Vector(768))
     )  # Vector for semantic search
 
+    created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+
     # FSRS fields
     due: datetime = Field(default_factory=datetime.utcnow, index=True)
     stability: float = Field(default=0)
