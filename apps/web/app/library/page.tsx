@@ -50,6 +50,7 @@ export default function LibraryPage() {
   const [folderId, setFolderId] = useState<string>("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [noteType, setNoteType] = useState<string>("");
+  const [searchInContent, setSearchInContent] = useState(true);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const debouncedSimilarity = useDebounce(similarity, 200);
@@ -61,6 +62,7 @@ export default function LibraryPage() {
     folder_id: folderId && folderId !== 'all' ? parseInt(folderId) : undefined,
     tags: selectedTags,
     note_type: noteType && noteType !== 'all' ? noteType : undefined,
+    search_in_content: searchInContent,
   };
 
   const { data: notes, isLoading } = useQuery<Note[]>({
@@ -130,15 +132,22 @@ export default function LibraryPage() {
           </Select>
         </div>
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-2">
               <Switch
                 id="semantic-search-toggle"
                 checked={isSemanticSearch}
                 onCheckedChange={setIsSemanticSearch}
-                disabled={!searchQuery}
               />
               <Label htmlFor="semantic-search-toggle">Semantic Search</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="search-content-toggle"
+                checked={searchInContent}
+                onCheckedChange={setSearchInContent}
+              />
+              <Label htmlFor="search-content-toggle">Search Content</Label>
             </div>
             {isSemanticSearch && (
               <Popover>

@@ -69,6 +69,7 @@ def search_notes_route(
     folder_id: int | None = None,
     tags: List[str] = Query(None),
     note_type: str | None = None,
+    search_in_content: bool = True,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
@@ -96,7 +97,8 @@ def search_notes_route(
         similarity=similarity,
         folder_id=folder_id,
         tags=tags,
-        note_type=note_type
+        note_type=note_type,
+        search_in_content=search_in_content
     )
 
     return notes

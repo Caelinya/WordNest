@@ -67,7 +67,8 @@ def search_notes(
     folder_id: int | None = None,
     tags: list[str] | None = None,
     note_type: str | None = None,
-    search_embedding: list[float] | None = None
+    search_embedding: list[float] | None = None,
+    search_in_content: bool = True
 ) -> list[Note]:
     """
     Performs a hybrid search with advanced filtering for notes.
@@ -108,13 +109,26 @@ def search_notes(
         return session.exec(final_query).all()
 
     # --- Hybrid Search Logic ---
-    keyword_query = base_query.where(
-        or_(
-            Note.text.ilike(f"%{search_query}%"),
-            Note.corrected_text.ilike(f"%{search_query}%"),
-            Note.translation.cast(sa.Text).ilike(f"%{search_query}%"),
+    if search_in_content:
+        # Search in text, corrected_text, and translation content
+        keyword_query = base_query.where(
+            or_(
+                Note.text.ilike(f"%{search_query}%"),
+                Note.corrected_text.ilike(f"%{search_query}%"),
+                sa.func.jsonb_path_exists(
+                    sa.cast(Note.translation, sa.dialects.postgresql.JSONB),
+                    f'$.**.translation ? (@ like_regex "{search_query}")'
+                ),
+            )
         )
-    )
+    else:
+        # Search only in text and corrected_text (not in translation content)
+        keyword_query = base_query.where(
+            or_(
+                Note.text.ilike(f"%{search_query}%"),
+                Note.corrected_text.ilike(f"%{search_query}%"),
+            )
+        )
     
     # Execute keyword search first
     keyword_search_results = session.exec(keyword_query).all()

@@ -76,6 +76,7 @@ export const notesApi = {
     folder_id?: number;
     tags?: string[];
     note_type?: string;
+    search_in_content?: boolean;
   }) => {
     const searchParams = new URLSearchParams();
     if (params.q) {
@@ -95,6 +96,9 @@ export const notesApi = {
     }
     if (params.note_type) {
       searchParams.append('note_type', params.note_type);
+    }
+    if (params.search_in_content !== undefined) {
+      searchParams.append('search_in_content', String(params.search_in_content));
     }
     
     const queryString = searchParams.toString();
