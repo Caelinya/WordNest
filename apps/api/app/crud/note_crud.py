@@ -137,7 +137,16 @@ def search_notes(
     if semantic and search_embedding:
         # Semantic search on the filtered results
         # Use l2_distance for better performance with ivfflat indexes
-        semantic_query = base_query.order_by(Note.vector.l2_distance(search_embedding)).limit(20)
+        # Convert similarity (0-1) to max L2 distance threshold
+        # For normalized vectors, L2 distance ranges from 0 to 2
+        max_distance = 2 * (1 - similarity)
+        
+        semantic_query = (
+            base_query
+            .filter(Note.vector.l2_distance(search_embedding) < max_distance)
+            .order_by(Note.vector.l2_distance(search_embedding))
+            .limit(20)
+        )
         semantic_search_results = session.exec(semantic_query).all()
 
     # Combine and de-duplicate results, preserving order from semantic search if applicable
