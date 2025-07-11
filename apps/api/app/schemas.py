@@ -13,6 +13,9 @@ class FolderRead(SQLModel):
     id: int
     name: str
 
+class FolderCreate(SQLModel):
+    name: str
+
 class NoteRead(SQLModel):
     id: int
     text: str

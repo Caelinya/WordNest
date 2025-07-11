@@ -47,22 +47,38 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Don't redirect if it's an auth endpoint request
       const isAuthRequest = error.config?.url?.includes('/auth/');
-      
+
       // Avoid redirect loops if already on the login page or if it's an auth request
       if (window.location.pathname !== '/' && !isAuthRequest) {
         toast.error("Your session has expired. Please log in again.");
         // We can't call the useAuth hook here, so we manually clear the cookie
         // and force a reload, which will trigger the AuthProvider logic.
         document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        
+
         // Use replace to avoid adding to history
         window.location.replace('/');
       }
     } else {
-      const message = error.response?.data?.detail || 'An unexpected error occurred.';
+      // Handle different types of error responses
+      let message = 'An unexpected error occurred.';
+
+      if (error.response?.data?.detail) {
+        const detail = error.response.data.detail;
+        if (typeof detail === 'string') {
+          message = detail;
+        } else if (Array.isArray(detail)) {
+          // Handle FastAPI validation errors
+          message = detail.map((err: any) =>
+            typeof err === 'string' ? err : err.msg || 'Validation error'
+          ).join(', ');
+        } else {
+          message = 'Invalid request format.';
+        }
+      }
+
       toast.error(message);
     }
-    
+
     return Promise.reject(error);
   }
 );

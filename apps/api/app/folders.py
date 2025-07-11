@@ -1,8 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlmodel import Session, select
+
 from .db import engine
 from .models import Folder, User
 from .auth import get_current_user
+from .schemas import FolderCreate # Import the new schema
+from .services import folder_service # Import the new service
 
 router = APIRouter()
 
@@ -19,19 +22,10 @@ def get_folders(current_user: User = Depends(get_current_user), session: Session
     return folders
 
 @router.post("", response_model=Folder)
-def create_folder(folder_name: str, current_user: User = Depends(get_current_user), session: Session = Depends(get_session)):
+def create_folder(folder: FolderCreate, current_user: User = Depends(get_current_user), session: Session = Depends(get_session)):
     """
-    Create a new folder for the current user.
+    Create a new folder for the current user by calling the folder service.
     """
-    # Check if folder with the same name already exists for this user
-    existing_folder = session.exec(
-        select(Folder).where(Folder.owner_id == current_user.id, Folder.name == folder_name)
-    ).first()
-    if existing_folder:
-        raise HTTPException(status_code=400, detail="Folder with this name already exists.")
-
-    new_folder = Folder(name=folder_name, owner_id=current_user.id)
-    session.add(new_folder)
-    session.commit()
-    session.refresh(new_folder)
-    return new_folder
+    return folder_service.create_folder_service(
+        session=session, folder_name=folder.name, owner=current_user
+    )

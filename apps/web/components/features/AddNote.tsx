@@ -80,13 +80,23 @@ export function AddNote() {
   });
 
   const createFolderMutation = useMutation<Folder, Error, string>({
-    mutationFn: (folderName) => api.post(`/folders?folder_name=${encodeURIComponent(folderName)}`, {}).then(res => res.data),
+    mutationFn: (folderName) => api.post('/folders', { name: folderName }).then(res => res.data),
     onSuccess: (newFolder) => {
       queryClient.invalidateQueries({ queryKey: ["folders"] });
       setSelectedFolderId(newFolder.id.toString());
       setAddFolderDialogOpen(false);
       setNewFolderName("");
       toast.success(`Folder "${newFolder.name}" created successfully!`);
+    },
+    onError: (error: any) => {
+      // Handle specific error cases
+      const errorMessage = error?.response?.data?.detail || 'Failed to create folder';
+      if (typeof errorMessage === 'string') {
+        toast.error(errorMessage);
+      } else {
+        // Handle validation errors from FastAPI
+        toast.error('Invalid folder name. Please check your input.');
+      }
     },
   });
 
