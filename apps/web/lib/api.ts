@@ -161,7 +161,7 @@ export const tagsApi = {
 export const practiceListsApi = {
   // List management
   getAll: async (): Promise<PracticeList[]> => {
-    const response = await api.get("/practice-lists/");
+    const response = await api.get("/practice-lists");
     return response.data;
   },
 
@@ -171,7 +171,7 @@ export const practiceListsApi = {
   },
 
   create: async (data: PracticeListCreate): Promise<PracticeList> => {
-    const response = await api.post("/practice-lists/", data);
+    const response = await api.post("/practice-lists", data);
     return response.data;
   },
 

@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlmodel import Session
+from sqlmodel import Session, select
 from typing import List
 
 from .db import engine
-from .models import User
+from .models import User, PracticeList, PracticeListItem
 from .schemas import (
     PracticeListCreate, PracticeListRead, PracticeListDetail, PracticeListUpdate,
     PracticeListItemCreate, PracticeListItemRead, PracticeListReorderRequest,
@@ -20,7 +20,7 @@ def get_session():
 
 # --- Practice List Management ---
 
-@router.post("/", response_model=PracticeListRead)
+@router.post("", response_model=PracticeListRead)
 def create_practice_list(
     practice_list: PracticeListCreate,
     current_user: User = Depends(get_current_user),
@@ -30,7 +30,7 @@ def create_practice_list(
         session=session, practice_list_in=practice_list, owner=current_user
     )
 
-@router.get("/", response_model=List[PracticeListRead])
+@router.get("", response_model=List[PracticeListRead])
 def get_practice_lists(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
