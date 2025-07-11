@@ -1,5 +1,6 @@
 from sqlmodel import SQLModel
 from typing import List, Optional
+from datetime import datetime
 
 # --- Tag Schemas ---
 
@@ -56,3 +57,52 @@ class Token(SQLModel):
     access_token: str
     token_type: str
     user: UserRead
+
+# --- Practice List Schemas ---
+
+class PracticeListCreate(SQLModel):
+    name: str
+    description: Optional[str] = None
+    settings: Optional[dict] = None
+
+class PracticeListUpdate(SQLModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    settings: Optional[dict] = None
+
+class PracticeListRead(SQLModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    settings: Optional[dict] = None
+    created_at: datetime
+    updated_at: datetime
+    item_count: int = 0
+
+class PracticeListDetail(PracticeListRead):
+    items: List["PracticeListItemRead"] = []
+
+# --- Practice List Item Schemas ---
+
+class PracticeListItemCreate(SQLModel):
+    note_ids: List[int]  # 支持批量添加
+
+class PracticeListItemRead(SQLModel):
+    id: int
+    note_id: int
+    note: NoteRead
+    order_index: int
+    added_at: datetime
+    review_count: int
+    last_reviewed: Optional[datetime] = None
+    mastery_level: int
+
+class PracticeListItemUpdate(SQLModel):
+    order_index: Optional[int] = None
+    mastery_level: Optional[int] = None
+
+class PracticeListReorderRequest(SQLModel):
+    item_ids: List[int]  # 按新顺序排列的 item IDs
+
+class ReviewResultRequest(SQLModel):
+    rating: str  # "again", "good", "easy"

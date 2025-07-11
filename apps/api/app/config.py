@@ -17,6 +17,9 @@ class Settings(BaseSettings):
 
     # --- Database (Optional) ---
     DATABASE_URL: str | None = None
+    
+    # --- CORS (Optional) ---
+    CORS_ORIGINS: str = "*"  # Comma-separated list of origins or "*" for all
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding='utf-8', extra='ignore')
 

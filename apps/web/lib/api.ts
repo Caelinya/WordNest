@@ -1,6 +1,7 @@
 import axios, { InternalAxiosRequestConfig } from 'axios';
 import { toast } from 'sonner';
 import { getCookie } from 'cookies-next';
+import { Note, Tag, User, Folder, PracticeList, PracticeListDetail, PracticeListCreate, PracticeListUpdate, PracticeListItem, ReviewResult } from "@/types/notes";
 
 const api = axios.create({
   baseURL: '/api', // All requests will be prefixed with /api
@@ -12,10 +13,22 @@ const api = axios.create({
 // Add a request interceptor to include the auth token
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = getCookie('auth_token');
+    // Try multiple ways to get the token
+    let token = getCookie('auth_token');
+    
+    // If getCookie doesn't work, try document.cookie
+    if (!token && typeof document !== 'undefined') {
+      const cookieValue = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('auth_token='))
+        ?.split('=')[1];
+      token = cookieValue;
+    }
+    
     if (token && typeof token === 'string') {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
     return config;
   },
   (error) => {
@@ -32,13 +45,18 @@ api.interceptors.response.use(
   (error) => {
     // Check for 401 Unauthorized error
     if (error.response?.status === 401) {
-      // Avoid redirect loops if already on the login page
-      if (window.location.pathname !== '/') {
+      // Don't redirect if it's an auth endpoint request
+      const isAuthRequest = error.config?.url?.includes('/auth/');
+      
+      // Avoid redirect loops if already on the login page or if it's an auth request
+      if (window.location.pathname !== '/' && !isAuthRequest) {
         toast.error("Your session has expired. Please log in again.");
         // We can't call the useAuth hook here, so we manually clear the cookie
         // and force a reload, which will trigger the AuthProvider logic.
         document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        window.location.href = '/';
+        
+        // Use replace to avoid adding to history
+        window.location.replace('/');
       }
     } else {
       const message = error.response?.data?.detail || 'An unexpected error occurred.';
@@ -122,3 +140,61 @@ export const tagsApi = {
     return response.data;
   }
 }
+
+// Practice Lists API
+export const practiceListsApi = {
+  // List management
+  getAll: async (): Promise<PracticeList[]> => {
+    const response = await api.get("/practice-lists/");
+    return response.data;
+  },
+
+  getById: async (id: number): Promise<PracticeListDetail> => {
+    const response = await api.get(`/practice-lists/${id}`);
+    return response.data;
+  },
+
+  create: async (data: PracticeListCreate): Promise<PracticeList> => {
+    const response = await api.post("/practice-lists/", data);
+    return response.data;
+  },
+
+  update: async (id: number, data: PracticeListUpdate): Promise<PracticeList> => {
+    const response = await api.put(`/practice-lists/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: number): Promise<void> => {
+    await api.delete(`/practice-lists/${id}`);
+  },
+
+  // Item management
+  addItems: async (listId: number, noteIds: number[]): Promise<PracticeListItem[]> => {
+    const response = await api.post(`/practice-lists/${listId}/items`, {
+      note_ids: noteIds,
+    });
+    return response.data;
+  },
+
+  removeItem: async (listId: number, itemId: number): Promise<void> => {
+    await api.delete(`/practice-lists/${listId}/items/${itemId}`);
+  },
+
+  reorderItems: async (listId: number, itemIds: number[]): Promise<void> => {
+    await api.put(`/practice-lists/${listId}/items/reorder`, {
+      item_ids: itemIds,
+    });
+  },
+
+  // Review
+  getReviewQueue: async (listId: number, limit: number = 20): Promise<PracticeListItem[]> => {
+    const response = await api.get(`/practice-lists/${listId}/review-queue`, {
+      params: { limit },
+    });
+    return response.data;
+  },
+
+  recordReview: async (listId: number, itemId: number, result: ReviewResult): Promise<void> => {
+    await api.post(`/practice-lists/${listId}/items/${itemId}/review`, result);
+  },
+};

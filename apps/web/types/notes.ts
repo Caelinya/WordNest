@@ -29,3 +29,44 @@ export interface User {
     username: string;
     email: string;
 }
+
+export interface PracticeList {
+  id: number;
+  name: string;
+  description?: string;
+  settings?: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+  itemCount: number;
+}
+
+export interface PracticeListDetail extends PracticeList {
+  items: PracticeListItem[];
+}
+
+export interface PracticeListItem {
+  id: number;
+  noteId: number;
+  note: Note;
+  orderIndex: number;
+  addedAt: string;
+  reviewCount: number;
+  lastReviewed?: string;
+  masteryLevel: number;
+}
+
+export interface PracticeListCreate {
+  name: string;
+  description?: string;
+  settings?: Record<string, any>;
+}
+
+export interface PracticeListUpdate {
+  name?: string;
+  description?: string;
+  settings?: Record<string, any>;
+}
+
+export interface ReviewResult {
+  rating: "again" | "good" | "easy";
+}

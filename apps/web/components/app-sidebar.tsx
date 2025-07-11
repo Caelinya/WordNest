@@ -8,6 +8,7 @@ import {
   Settings,
   Library,
   LayoutDashboard,
+  ListChecks,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -53,6 +54,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             title: "Review",
             url: "/review",
             icon: BookOpen,
+        },
+        {
+            title: "Practice Lists",
+            url: "/practice-lists",
+            icon: ListChecks,
         },
         {
             title: "Settings",

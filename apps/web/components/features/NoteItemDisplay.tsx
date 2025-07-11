@@ -1,13 +1,24 @@
 "use client";
 
-import { Note } from "@/types/notes";
+import { Note, PracticeList } from "@/types/notes";
 import { Button } from "@/components/ui/button";
 import { TagBadge } from "../ui/TagBadge";
 import { WordCard, WordAnalysis } from "./WordCard";
 import { PhraseCard, PhraseAnalysis } from "./PhraseCard";
 import { SentenceCard, SentenceAnalysis } from "./SentenceCard";
-import { Pencil, Trash2, Folder } from "lucide-react";
+import { Pencil, Trash2, Folder, ListPlus } from "lucide-react";
 import { useDisplayMode } from "@/contexts/DisplayModeContext";
+import { useState, useEffect } from "react";
+import { practiceListsApi } from "@/lib/api";
+import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface NoteItemDisplayProps {
   note: Note;
@@ -18,6 +29,29 @@ interface NoteItemDisplayProps {
 
 export function NoteItemDisplay({ note, onEdit, onDelete, isDeleting }: NoteItemDisplayProps) {
   const { displayMode } = useDisplayMode();
+  const [practiceLists, setPracticeLists] = useState<PracticeList[]>([]);
+  const [isLoadingLists, setIsLoadingLists] = useState(false);
+
+  const loadPracticeLists = async () => {
+    setIsLoadingLists(true);
+    try {
+      const lists = await practiceListsApi.getAll();
+      setPracticeLists(lists);
+    } catch (error) {
+      toast.error("Failed to load practice lists");
+    } finally {
+      setIsLoadingLists(false);
+    }
+  };
+
+  const handleAddToPracticeList = async (listId: number) => {
+    try {
+      await practiceListsApi.addItems(listId, [note.id]);
+      toast.success("Added to practice list");
+    } catch (error) {
+      toast.error("Failed to add to practice list");
+    }
+  };
 
   const renderCardContent = () => {
     if (!note.translation) {
@@ -66,6 +100,44 @@ export function NoteItemDisplay({ note, onEdit, onDelete, isDeleting }: NoteItem
 
       <div className="ml-4 flex-shrink-0">
         <div className="flex items-center opacity-0 transition-opacity group-hover:opacity-100">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Add to practice list"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (practiceLists.length === 0) {
+                    loadPracticeLists();
+                  }
+                }}
+              >
+                <ListPlus className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Add to Practice List</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {isLoadingLists ? (
+                <DropdownMenuItem disabled>Loading...</DropdownMenuItem>
+              ) : practiceLists.length === 0 ? (
+                <DropdownMenuItem disabled>No practice lists</DropdownMenuItem>
+              ) : (
+                practiceLists.map((list) => (
+                  <DropdownMenuItem
+                    key={list.id}
+                    onClick={() => handleAddToPracticeList(list.id)}
+                  >
+                    {list.name}
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      ({list.itemCount} notes)
+                    </span>
+                  </DropdownMenuItem>
+                ))
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button variant="ghost" size="icon" onClick={onEdit} aria-label="Edit note">
             <Pencil className="h-4 w-4" />
           </Button>
