@@ -139,7 +139,7 @@ export function NoteItemDisplay({ note, onEdit, onDelete, isDeleting }: NoteItem
                   >
                     {list.name}
                     <span className="ml-2 text-xs text-muted-foreground">
-                      ({list.itemCount} notes)
+                      ({list.item_count} notes)
                     </span>
                   </DropdownMenuItem>
                 ))

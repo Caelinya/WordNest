@@ -35,9 +35,9 @@ export interface PracticeList {
   name: string;
   description?: string;
   settings?: Record<string, any>;
-  createdAt: string;
-  updatedAt: string;
-  itemCount: number;
+  created_at: string;
+  updated_at: string;
+  item_count: number;
 }
 
 export interface PracticeListDetail extends PracticeList {
@@ -46,13 +46,13 @@ export interface PracticeListDetail extends PracticeList {
 
 export interface PracticeListItem {
   id: number;
-  noteId: number;
+  note_id: number;
   note: Note;
-  orderIndex: number;
-  addedAt: string;
-  reviewCount: number;
-  lastReviewed?: string;
-  masteryLevel: number;
+  order_index: number;
+  added_at: string;
+  review_count: number;
+  last_reviewed?: string;
+  mastery_level: number;
 }
 
 export interface PracticeListCreate {

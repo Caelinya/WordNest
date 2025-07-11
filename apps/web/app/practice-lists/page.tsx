@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Eye, Edit } from "lucide-react";
+import { Plus, Trash2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -165,10 +165,10 @@ export default function PracticeListsPage() {
               <CardContent>
                 <div className="flex justify-between items-center mb-4">
                   <span className="text-sm text-muted-foreground">
-                    {list.itemCount} {list.itemCount === 1 ? "note" : "notes"}
+                    {list.item_count} {list.item_count === 1 ? "note" : "notes"}
                   </span>
                   <span className="text-sm text-muted-foreground">
-                    Updated {new Date(list.updatedAt).toLocaleDateString()}
+                    Updated {new Date(list.updated_at).toLocaleDateString()}
                   </span>
                 </div>
                 <div className="flex gap-2">

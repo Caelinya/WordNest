@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Trash2, GripVertical, BookOpen, Edit } from "lucide-react";
+import { ArrowLeft, Plus, GripVertical, BookOpen, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -92,7 +92,7 @@ export default function PracticeListDetailPage() {
       });
       
       // Filter out notes already in the list
-      const existingNoteIds = new Set(list?.items.map(item => item.noteId) || []);
+      const existingNoteIds = new Set(list?.items.map(item => item.note_id) || []);
       const filteredResults = results.filter((note: Note) => !existingNoteIds.has(note.id));
       
       setSearchResults(filteredResults);
@@ -117,7 +117,7 @@ export default function PracticeListDetailPage() {
         setList({
           ...list,
           items: [...list.items, ...newItems],
-          itemCount: list.itemCount + newItems.length,
+          item_count: list.item_count + newItems.length,
         });
       }
       
@@ -144,7 +144,7 @@ export default function PracticeListDetailPage() {
         setList({
           ...list,
           items: list.items.filter(item => item.id !== itemId),
-          itemCount: list.itemCount - 1,
+          item_count: list.item_count - 1,
         });
       }
       
@@ -218,7 +218,7 @@ export default function PracticeListDetailPage() {
             <div>
               <CardTitle>Notes in this list</CardTitle>
               <CardDescription>
-                {list.itemCount} {list.itemCount === 1 ? "note" : "notes"}
+                {list.item_count} {list.item_count === 1 ? "note" : "notes"}
               </CardDescription>
             </div>
             {isOwner && (
@@ -246,7 +246,6 @@ export default function PracticeListDetailPage() {
           ) : (
             <div className="space-y-4">
               {list.items.map((item) => {
-                console.log("Rendering item from API:", item); // <--- DEBUG LOG
                 return (
                   <div
                     key={item.id}
@@ -275,18 +274,18 @@ export default function PracticeListDetailPage() {
                         isDeleting={false}
                       />
                       <div className="mt-2 text-sm text-muted-foreground pl-4">
-                        <span>Added {formatDate(item.addedAt)}</span>
-                        {item.reviewCount > 0 && (
+                        <span>Added {formatDate(item.added_at)}</span>
+                        {item.review_count > 0 && (
                           <>
                             <span className="mx-2">•</span>
                             <span>
-                              Reviewed {item.reviewCount} times (Last:{" "}
-                              {formatDate(item.lastReviewed)})
+                              Reviewed {item.review_count} times (Last:{" "}
+                              {formatDate(item.last_reviewed)})
                             </span>
                           </>
                         )}
                         <span className="mx-2">•</span>
-                        <span>Mastery: {item.masteryLevel}/5</span>
+                        <span>Mastery: {item.mastery_level}/5</span>
                       </div>
                     </div>
                   </div>
