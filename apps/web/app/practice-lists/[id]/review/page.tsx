@@ -127,7 +127,7 @@ export default function PracticeListReviewPage() {
           <div className="text-center">
             <h2 className="text-2xl font-bold mb-4">Session Complete!</h2>
             <p className="text-muted-foreground mb-6">
-              Great job! You've reviewed all available cards.
+              Great job! You&apos;ve reviewed all available cards.
             </p>
             <div className="flex gap-4 justify-center">
               <Button
