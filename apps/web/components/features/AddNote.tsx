@@ -88,9 +88,9 @@ export function AddNote() {
       setNewFolderName("");
       toast.success(`Folder "${newFolder.name}" created successfully!`);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       // Handle specific error cases
-      const errorMessage = error?.response?.data?.detail || 'Failed to create folder';
+      const errorMessage = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Failed to create folder';
       if (typeof errorMessage === 'string') {
         toast.error(errorMessage);
       } else {

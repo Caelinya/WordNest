@@ -30,7 +30,7 @@ export default function PracticeListsPage() {
     try {
       const data = await practiceListsApi.getAll();
       setLists(data);
-    } catch (error) {
+    } catch {
       toast.error("Failed to load practice lists");
     } finally {
       setLoading(false);
@@ -49,7 +49,7 @@ export default function PracticeListsPage() {
       setIsCreateDialogOpen(false);
       setNewList({ name: "", description: "" });
       toast.success("Practice list created successfully");
-    } catch (error) {
+    } catch {
       toast.error("Failed to create practice list");
     }
   };
@@ -63,7 +63,7 @@ export default function PracticeListsPage() {
       await practiceListsApi.delete(id);
       setLists(lists.filter(list => list.id !== id));
       toast.success("Practice list deleted successfully");
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete practice list");
     }
   };
@@ -139,7 +139,7 @@ export default function PracticeListsPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <p className="text-muted-foreground mb-4">
-              You haven't created any practice lists yet
+              You haven&apos;t created any practice lists yet
             </p>
             <Button
               onClick={() => setIsCreateDialogOpen(true)}

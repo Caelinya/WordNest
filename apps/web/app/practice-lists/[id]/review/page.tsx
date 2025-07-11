@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,11 +21,7 @@ export default function PracticeListReviewPage() {
   const [loading, setLoading] = useState(true);
   const [isSessionComplete, setIsSessionComplete] = useState(false);
 
-  useEffect(() => {
-    loadReviewData();
-  }, [listId]);
-
-  const loadReviewData = async () => {
+  const loadReviewData = useCallback(async () => {
     try {
       // Load list info and review queue in parallel
       const [listData, queueData] = await Promise.all([
@@ -39,13 +35,17 @@ export default function PracticeListReviewPage() {
       if (queueData.length === 0) {
         setIsSessionComplete(true);
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to load review data");
       router.push(`/practice-lists/${listId}`);
     } finally {
       setLoading(false);
     }
-  };
+  }, [listId, router]);
+
+  useEffect(() => {
+    loadReviewData();
+  }, [loadReviewData]);
 
   const handleCompleted = async (rating: 'again' | 'good' | 'easy') => {
     const currentItem = reviewQueue[currentIndex];
@@ -60,7 +60,7 @@ export default function PracticeListReviewPage() {
       } else {
         setCurrentIndex(prev => prev + 1);
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to record review result");
     }
   };
@@ -77,7 +77,7 @@ export default function PracticeListReviewPage() {
       if (queueData.length === 0) {
         setIsSessionComplete(true);
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to load review queue");
     } finally {
       setLoading(false);
@@ -151,9 +151,9 @@ export default function PracticeListReviewPage() {
             
             {/* Progress and stats */}
             <div className="mt-6 text-center text-sm text-muted-foreground">
-              <p>Mastery Level: {reviewQueue[currentIndex].masteryLevel}/5</p>
-              {reviewQueue[currentIndex].reviewCount > 0 && (
-                <p>Previous reviews: {reviewQueue[currentIndex].reviewCount}</p>
+              <p>Mastery Level: {reviewQueue[currentIndex].mastery_level}/5</p>
+              {reviewQueue[currentIndex].review_count > 0 && (
+                <p>Previous reviews: {reviewQueue[currentIndex].review_count}</p>
               )}
             </div>
           </div>
@@ -184,17 +184,17 @@ function getQuestionText(item: PracticeListItem): string {
   // Extract Chinese translation based on note type
   switch (note.type) {
     case "word":
-      const wordData = note.translation as any;
-      return `中文：${wordData.translation || wordData.chinese || "请翻译"}`;
-      
+      const wordData = note.translation as unknown as Record<string, unknown>;
+      return `中文：${(wordData.translation as string) || (wordData.chinese as string) || "请翻译"}`;
+
     case "phrase":
-      const phraseData = note.translation as any;
-      return `中文：${phraseData.translation || phraseData.chinese || "请翻译"}`;
-      
+      const phraseData = note.translation as unknown as Record<string, unknown>;
+      return `中文：${(phraseData.translation as string) || (phraseData.chinese as string) || "请翻译"}`;
+
     case "sentence":
-      const sentenceData = note.translation as any;
-      return `中文：${sentenceData.translation || sentenceData.chinese || "请翻译"}`;
-      
+      const sentenceData = note.translation as unknown as Record<string, unknown>;
+      return `中文：${(sentenceData.translation as string) || (sentenceData.chinese as string) || "请翻译"}`;
+
     default:
       return `Translate: ${note.text}`;
   }
@@ -203,9 +203,9 @@ function getQuestionText(item: PracticeListItem): string {
 // Helper function to determine review mode based on mastery level
 function determineReviewMode(item: PracticeListItem): 'first-letter-hint' | 'length-hint' | 'translation-recall' {
   // Lower mastery = more hints
-  if (item.masteryLevel <= 1) {
+  if (item.mastery_level <= 1) {
     return 'first-letter-hint';
-  } else if (item.masteryLevel <= 3) {
+  } else if (item.mastery_level <= 3) {
     return 'length-hint';
   } else {
     return 'translation-recall';

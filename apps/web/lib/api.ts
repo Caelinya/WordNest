@@ -1,7 +1,7 @@
 import axios, { InternalAxiosRequestConfig } from 'axios';
 import { toast } from 'sonner';
 import { getCookie } from 'cookies-next';
-import { Note, Tag, User, Folder, PracticeList, PracticeListDetail, PracticeListCreate, PracticeListUpdate, PracticeListItem, ReviewResult } from "@/types/notes";
+import { PracticeList, PracticeListDetail, PracticeListCreate, PracticeListUpdate, PracticeListItem, ReviewResult } from "@/types/notes";
 
 const api = axios.create({
   baseURL: '/api', // All requests will be prefixed with /api
@@ -68,8 +68,8 @@ api.interceptors.response.use(
           message = detail;
         } else if (Array.isArray(detail)) {
           // Handle FastAPI validation errors
-          message = detail.map((err: any) =>
-            typeof err === 'string' ? err : err.msg || 'Validation error'
+          message = detail.map((err: unknown) =>
+            typeof err === 'string' ? err : (err as { msg?: string }).msg || 'Validation error'
           ).join(', ');
         } else {
           message = 'Invalid request format.';

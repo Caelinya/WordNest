@@ -41,7 +41,7 @@ export function NoteItemDisplay({ note, onEdit, onDelete, isDeleting }: NoteItem
       const lists = await practiceListsApi.getAll();
       setPracticeLists(lists);
       setHasLoadedLists(true);
-    } catch (error) {
+    } catch {
       toast.error("Failed to load practice lists");
     } finally {
       setIsLoadingLists(false);
@@ -52,7 +52,7 @@ export function NoteItemDisplay({ note, onEdit, onDelete, isDeleting }: NoteItem
     try {
       await practiceListsApi.addItems(listId, [note.id]);
       toast.success("Added to practice list");
-    } catch (error) {
+    } catch {
       toast.error("Failed to add to practice list");
     }
   };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Plus, GripVertical, BookOpen, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -41,11 +41,7 @@ export default function PracticeListDetailPage() {
   // const isOwner = list?.owner_id === currentUser?.id;
   const isOwner = true; // Currently, only owners can access their lists
 
-  useEffect(() => {
-    loadList();
-  }, [listId]);
-
-  const loadList = async () => {
+  const loadList = useCallback(async () => {
     try {
       const data = await practiceListsApi.getById(listId);
       setList(data);
@@ -53,13 +49,17 @@ export default function PracticeListDetailPage() {
         name: data.name,
         description: data.description,
       });
-    } catch (error) {
+    } catch {
       toast.error("Failed to load practice list");
       router.push("/practice-lists");
     } finally {
       setLoading(false);
     }
-  };
+  }, [listId, router]);
+
+  useEffect(() => {
+    loadList();
+  }, [loadList]);
 
   const handleUpdate = async () => {
     if (!editData.name?.trim()) {
@@ -76,7 +76,7 @@ export default function PracticeListDetailPage() {
       });
       setIsEditDialogOpen(false);
       toast.success("Practice list updated successfully");
-    } catch (error) {
+    } catch {
       toast.error("Failed to update practice list");
     }
   };
@@ -96,7 +96,7 @@ export default function PracticeListDetailPage() {
       const filteredResults = results.filter((note: Note) => !existingNoteIds.has(note.id));
       
       setSearchResults(filteredResults);
-    } catch (error) {
+    } catch {
       toast.error("Failed to search notes");
     } finally {
       setSearching(false);
@@ -126,7 +126,7 @@ export default function PracticeListDetailPage() {
       setSearchResults([]);
       setSearchQuery("");
       toast.success(`Added ${newItems.length} notes to the list`);
-    } catch (error) {
+    } catch {
       toast.error("Failed to add notes to the list");
     }
   };
@@ -149,7 +149,7 @@ export default function PracticeListDetailPage() {
       }
       
       toast.success("Note removed from the list");
-    } catch (error) {
+    } catch {
       toast.error("Failed to remove note from the list");
     }
   };
