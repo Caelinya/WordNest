@@ -8,7 +8,7 @@ import { PhraseCard, PhraseAnalysis } from "./PhraseCard";
 import { SentenceCard, SentenceAnalysis } from "./SentenceCard";
 import { Pencil, Trash2, Folder, ListPlus } from "lucide-react";
 import { useDisplayMode } from "@/contexts/DisplayModeContext";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { practiceListsApi } from "@/lib/api";
 import { toast } from "sonner";
 import {
@@ -31,12 +31,16 @@ export function NoteItemDisplay({ note, onEdit, onDelete, isDeleting }: NoteItem
   const { displayMode } = useDisplayMode();
   const [practiceLists, setPracticeLists] = useState<PracticeList[]>([]);
   const [isLoadingLists, setIsLoadingLists] = useState(false);
+  const [hasLoadedLists, setHasLoadedLists] = useState(false);
 
   const loadPracticeLists = async () => {
+    if (hasLoadedLists) return; // Avoid loading multiple times
+
     setIsLoadingLists(true);
     try {
       const lists = await practiceListsApi.getAll();
       setPracticeLists(lists);
+      setHasLoadedLists(true);
     } catch (error) {
       toast.error("Failed to load practice lists");
     } finally {
@@ -100,18 +104,16 @@ export function NoteItemDisplay({ note, onEdit, onDelete, isDeleting }: NoteItem
 
       <div className="ml-4 flex-shrink-0">
         <div className="flex items-center opacity-0 transition-opacity group-hover:opacity-100">
-          <DropdownMenu>
+          <DropdownMenu onOpenChange={(open) => {
+            if (open) {
+              loadPracticeLists();
+            }
+          }}>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
                 aria-label="Add to practice list"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (practiceLists.length === 0) {
-                    loadPracticeLists();
-                  }
-                }}
               >
                 <ListPlus className="h-4 w-4" />
               </Button>
@@ -122,7 +124,13 @@ export function NoteItemDisplay({ note, onEdit, onDelete, isDeleting }: NoteItem
               {isLoadingLists ? (
                 <DropdownMenuItem disabled>Loading...</DropdownMenuItem>
               ) : practiceLists.length === 0 ? (
-                <DropdownMenuItem disabled>No practice lists</DropdownMenuItem>
+                <>
+                  <DropdownMenuItem disabled>No practice lists found</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => window.location.href = '/practice-lists'}>
+                    Create a practice list
+                  </DropdownMenuItem>
+                </>
               ) : (
                 practiceLists.map((list) => (
                   <DropdownMenuItem
