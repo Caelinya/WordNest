@@ -44,6 +44,9 @@ idea.md
 upload_secrets.sh
 .roo/
 CODE_REVIEW_REPORT.md
+CLAUDE.md
+gemini-review.md
+.claude
 
 # Python cache
 __pycache__/

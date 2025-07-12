@@ -139,8 +139,20 @@ export const notesApi = {
     const response = await api.get(`/notes/search?${queryString}`);
     return response.data;
   },
-  // We can add other note-related API calls here in the future
-  // e.g., getNotes, createNote, etc.
+
+  update: async (noteId: number, data: { text: string; tags: string[] }, reAnalyze: boolean = false) => {
+    const response = await api.put(`/notes/${noteId}?re_analyze=${reAnalyze}`, data);
+    return response.data;
+  },
+
+  delete: async (noteId: number) => {
+    await api.delete(`/notes/${noteId}`);
+  },
+
+  getCount: async () => {
+    const response = await api.get('/notes/count');
+    return response.data;
+  },
 };
 
 export const foldersApi = {

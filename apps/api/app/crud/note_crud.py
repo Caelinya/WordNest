@@ -20,6 +20,13 @@ def get_notes_by_owner(*, session: Session, owner_id: int) -> list[Note]:
     statement = select(Note).where(Note.owner_id == owner_id).options(selectinload(Note.tags))
     return session.exec(statement).all()
 
+def get_notes_count_by_owner(*, session: Session, owner_id: int) -> int:
+    """
+    Get the total count of notes for a specific user.
+    """
+    statement = select(sa.func.count(Note.id)).where(Note.owner_id == owner_id)
+    return session.exec(statement).one()
+
 def create_note_db(*, session: Session, note: Note) -> Note:
     """
     Create a new note in the database.

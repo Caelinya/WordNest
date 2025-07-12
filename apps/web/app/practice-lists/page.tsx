@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Plus, Trash2, Eye } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -12,60 +13,65 @@ import { toast } from "sonner";
 import { practiceListsApi } from "@/lib/api";
 import { PracticeList, PracticeListCreate } from "@/types/notes";
 import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function PracticeListsPage() {
-  const [lists, setLists] = useState<PracticeList[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newList, setNewList] = useState<PracticeListCreate>({
     name: "",
     description: "",
   });
 
-  useEffect(() => {
-    loadLists();
-  }, []);
+  // Fetch practice lists using React Query
+  const { data: lists = [], isLoading: loading } = useQuery<PracticeList[]>({
+    queryKey: ["practice-lists"],
+    queryFn: practiceListsApi.getAll,
+    enabled: isAuthenticated,
+  });
 
-  const loadLists = async () => {
-    try {
-      const data = await practiceListsApi.getAll();
-      setLists(data);
-    } catch {
-      toast.error("Failed to load practice lists");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Create practice list mutation
+  const createMutation = useMutation({
+    mutationFn: practiceListsApi.create,
+    onSuccess: (created) => {
+      queryClient.setQueryData<PracticeList[]>(["practice-lists"], (old = []) => [created, ...old]);
+      setIsCreateDialogOpen(false);
+      setNewList({ name: "", description: "" });
+      toast.success("Practice list created successfully");
+    },
+    onError: () => {
+      toast.error("Failed to create practice list");
+    },
+  });
 
-  const handleCreate = async () => {
+  // Delete practice list mutation
+  const deleteMutation = useMutation({
+    mutationFn: practiceListsApi.delete,
+    onSuccess: (_, id) => {
+      queryClient.setQueryData<PracticeList[]>(["practice-lists"], (old = []) => 
+        old.filter(list => list.id !== id)
+      );
+      toast.success("Practice list deleted successfully");
+    },
+    onError: () => {
+      toast.error("Failed to delete practice list");
+    },
+  });
+
+  const handleCreate = () => {
     if (!newList.name.trim()) {
       toast.error("Please enter a list name");
       return;
     }
-
-    try {
-      const created = await practiceListsApi.create(newList);
-      setLists([created, ...lists]);
-      setIsCreateDialogOpen(false);
-      setNewList({ name: "", description: "" });
-      toast.success("Practice list created successfully");
-    } catch {
-      toast.error("Failed to create practice list");
-    }
+    createMutation.mutate(newList);
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = (id: number) => {
     if (!confirm("Are you sure you want to delete this practice list?")) {
       return;
     }
-
-    try {
-      await practiceListsApi.delete(id);
-      setLists(lists.filter(list => list.id !== id));
-      toast.success("Practice list deleted successfully");
-    } catch {
-      toast.error("Failed to delete practice list");
-    }
+    deleteMutation.mutate(id);
   };
 
   if (loading) {

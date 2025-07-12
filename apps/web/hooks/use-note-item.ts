@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import api from "@/lib/api";
+import { notesApi } from "@/lib/api";
 import { toast } from "sonner";
 import { Note } from "@/types/notes";
 
@@ -14,10 +14,10 @@ export function useNoteItem(note: Note) {
 
   const updateNoteMutation = useMutation({
     mutationFn: (variables: { text: string; tags: string[]; reAnalyze: boolean }) =>
-      api.put(`/notes/${note.id}?re_analyze=${variables.reAnalyze}`, {
+      notesApi.update(note.id, {
         text: variables.text,
         tags: variables.tags,
-      }),
+      }, variables.reAnalyze),
     onSuccess: () => {
       toast.success("Note updated successfully!");
       setIsEditing(false);
@@ -30,7 +30,7 @@ export function useNoteItem(note: Note) {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (noteId: number) => api.delete(`/notes/${noteId}`),
+    mutationFn: (noteId: number) => notesApi.delete(noteId),
     onSuccess: () => {
       toast.success("Note deleted.");
       queryClient.invalidateQueries({ queryKey: ["notes"] });

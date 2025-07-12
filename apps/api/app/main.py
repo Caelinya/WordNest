@@ -5,16 +5,16 @@ from contextlib import asynccontextmanager
 from . import auth, notes, parser, folders, tags, practice_lists
 from .db import engine
 from .models import SQLModel
-from .config import settings
+from .config import settings, logger
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("Creating tables...")
+    logger.info("Creating database tables...")
     create_db_and_tables()
-    print("Tables created.")
+    logger.info("Database tables created successfully.")
     yield
 
 app = FastAPI(lifespan=lifespan)

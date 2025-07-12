@@ -83,9 +83,9 @@ export default function LibraryPage() {
     enabled: isAuthenticated,
   });
   
-  const { data: allNotes = [] } = useQuery<Note[]>({
-    queryKey: ["notes", "all"],
-    queryFn: () => notesApi.search({}), // fetch all notes initially
+  const { data: notesCount } = useQuery<{ count: number }>({
+    queryKey: ["notes", "count"],
+    queryFn: notesApi.getCount,
     enabled: isAuthenticated,
   });
 
@@ -178,7 +178,7 @@ export default function LibraryPage() {
       <NoteList
         notes={notes || []}
         isLoading={isLoading}
-        totalNotes={allNotes.length}
+        totalNotes={notesCount?.count || 0}
       />
     </div>
   );

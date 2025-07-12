@@ -116,13 +116,23 @@ def add_items_to_list_service(*, session: Session, practice_list_id: int, item_c
         .where(PracticeListItem.practice_list_id == practice_list_id)
     ).first() or -1
     
+    # Filter out note_ids that are already in the list
+    new_note_ids = [note_id for note_id in item_create.note_ids if note_id not in existing_note_ids]
+    
+    if not new_note_ids:
+        return []
+    
+    # Fetch all notes at once to avoid N+1 query
+    valid_notes = session.exec(
+        select(Note.id)
+        .where(Note.id.in_(new_note_ids), Note.owner_id == owner.id)
+    ).all()
+    
+    valid_note_ids = set(valid_notes)
+    
     added_items = []
-    for idx, note_id in enumerate(item_create.note_ids):
-        if note_id in existing_note_ids:
-            continue
-            
-        note = session.get(Note, note_id)
-        if not note or note.owner_id != owner.id:
+    for idx, note_id in enumerate(new_note_ids):
+        if note_id not in valid_note_ids:
             continue
         
         new_item = PracticeListItem(

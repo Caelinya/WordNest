@@ -7,6 +7,7 @@ from .auth import get_current_user
 from .services import note_service, ai_service
 from .schemas import NoteCreate, NoteUpdate, NoteRead
 from .crud import note_crud
+from .config import logger
 
 router = APIRouter()
 
@@ -61,6 +62,14 @@ def read_notes(current_user: User = Depends(get_current_user), session: Session 
     notes = note_crud.get_notes_by_owner(session=session, owner_id=current_user.id)
     return notes
 
+@router.get("/count")
+def get_notes_count(current_user: User = Depends(get_current_user), session: Session = Depends(get_session)):
+    """
+    Get the total count of notes for the current user.
+    """
+    count = note_crud.get_notes_count_by_owner(session=session, owner_id=current_user.id)
+    return {"count": count}
+
 @router.get("/search", response_model=list[NoteRead])
 def search_notes_route(
     q: str | None = None,
@@ -86,7 +95,7 @@ def search_notes_route(
         search_embedding = ai_service.get_embedding(q)
         if not search_embedding:
             # Non-fatal, semantic search will just be skipped
-            print(f"Could not generate embedding for the search query: {q}")
+            logger.warning(f"Could not generate embedding for the search query: {q}")
 
     notes = note_crud.search_notes(
         session=session,
@@ -111,8 +120,7 @@ def delete_note(note_id: int, current_user: User = Depends(get_current_user), se
     if note.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to delete this note")
     
-    note_crud.delete_note_db(session=session, note=note)
-    session.commit()
+    note_service.delete_note_service(session=session, note=note)
     return
 
 @router.put("/{note_id}", response_model=NoteRead)

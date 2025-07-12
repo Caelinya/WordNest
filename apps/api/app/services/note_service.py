@@ -81,3 +81,10 @@ def update_note_service(*, session: Session, db_note: Note, note_in: NoteUpdate,
     session.commit()
     session.refresh(updated_note)
     return updated_note
+
+def delete_note_service(*, session: Session, note: Note) -> None:
+    """
+    Business logic for deleting a note.
+    """
+    note_crud.delete_note_db(session=session, note=note)
+    session.commit()

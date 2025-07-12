@@ -5,15 +5,45 @@ from openai import OpenAI, APIError, RateLimitError, APITimeoutError, APIConnect
 from pydantic import BaseModel
 from typing import List, Union, Optional
 
-from ..config import settings
+from ..config import settings, logger
+
+# --- Configuration Validation ---
+def validate_ai_config() -> bool:
+    """
+    Validates AI service configuration.
+    Returns True if configuration is valid, False otherwise.
+    """
+    errors = []
+    
+    if not settings.API_KEY:
+        errors.append("API_KEY is required")
+    
+    if not settings.AI_MODEL:
+        errors.append("AI_MODEL is required")
+        
+    if not settings.EMBEDDING_MODEL:
+        errors.append("EMBEDDING_MODEL is required")
+    
+    if errors:
+        logger.error(f"AI service configuration validation failed: {', '.join(errors)}")
+        return False
+    
+    logger.info("AI service configuration validation passed")
+    return True
 
 # --- Client Initialization ---
 client = None
-if settings.API_KEY:
-    client = OpenAI(
-        api_key=settings.API_KEY,
-        base_url=settings.BASE_URL,
-    )
+if validate_ai_config():
+    try:
+        client = OpenAI(
+            api_key=settings.API_KEY,
+            base_url=settings.BASE_URL,
+        )
+        logger.info("AI service client initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize AI service client: {e}")
+else:
+    logger.warning("AI service client not initialized due to configuration issues")
 
 # --- Pydantic Models for Structured AI Output ---
 
@@ -141,7 +171,7 @@ def get_embedding(text: str) -> list[float] | None:
     Generates an embedding for the given text with retry logic.
     """
     if not client:
-        print("AI service is disabled. Skipping embedding generation.")
+        logger.info("AI service is disabled. Skipping embedding generation.")
         return None
 
     try:
@@ -151,10 +181,10 @@ def get_embedding(text: str) -> list[float] | None:
         )
         return response.data[0].embedding
     except APIError as e:
-        print(f"OpenAI APIError during embedding generation: {e}")
+        logger.error(f"OpenAI APIError during embedding generation: {e}")
         return None
     except Exception as e:
-        print(f"An unexpected error occurred during embedding generation: {e}")
+        logger.error(f"An unexpected error occurred during embedding generation: {e}")
         return None
 
 @backoff.on_exception(backoff.expo, (RateLimitError, APITimeoutError, APIConnectionError), max_tries=3)
@@ -164,7 +194,7 @@ def call_ai(system_prompt: str, user_prompt: str) -> dict | None:
     Returns raw JSON response without validation for maximum flexibility.
     """
     if not client:
-        print("AI service is disabled. Skipping AI call.")
+        logger.info("AI service is disabled. Skipping AI call.")
         return None
 
     try:
@@ -179,19 +209,19 @@ def call_ai(system_prompt: str, user_prompt: str) -> dict | None:
 
         raw_json_response = completion.choices[0].message.content
         if not raw_json_response:
-            print("AI returned an empty response.")
+            logger.warning("AI returned an empty response.")
             return None
 
         return json.loads(raw_json_response)
 
     except APIError as e:
-        print(f"OpenAI APIError during AI call: {e}")
+        logger.error(f"OpenAI APIError during AI call: {e}")
         return None
     except json.JSONDecodeError as e:
-        print(f"Failed to decode JSON from AI response: {e}")
+        logger.error(f"Failed to decode JSON from AI response: {e}")
         return None
     except Exception as e:
-        print(f"An unexpected error occurred during AI call: {e}")
+        logger.error(f"An unexpected error occurred during AI call: {e}")
         return None
 
 @backoff.on_exception(backoff.expo, (RateLimitError, APITimeoutError, APIConnectionError), max_tries=3)
@@ -200,7 +230,7 @@ def analyze_text(text: str) -> dict | None:
     Analyzes text with retry logic and returns a structured analysis.
     """
     if not client:
-        print("AI service is disabled. Skipping text analysis.")
+        logger.info("AI service is disabled. Skipping text analysis.")
         return None
 
     try:
@@ -215,7 +245,7 @@ def analyze_text(text: str) -> dict | None:
 
         raw_json_response = completion.choices[0].message.content
         if not raw_json_response:
-            print("AI returned an empty response.")
+            logger.warning("AI returned an empty response.")
             return None
 
         json_response = json.loads(raw_json_response)
@@ -224,11 +254,11 @@ def analyze_text(text: str) -> dict | None:
         return validated_obj.model_dump()
 
     except APIError as e:
-        print(f"OpenAI APIError during text analysis: {e}")
+        logger.error(f"OpenAI APIError during text analysis: {e}")
         return None
     except json.JSONDecodeError as e:
-        print(f"Failed to decode JSON from AI response: {e}")
+        logger.error(f"Failed to decode JSON from AI response: {e}")
         return None
     except Exception as e:
-        print(f"An unexpected error occurred during text analysis: {e}")
+        logger.error(f"An unexpected error occurred during text analysis: {e}")
         return None

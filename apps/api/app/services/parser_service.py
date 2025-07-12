@@ -4,6 +4,7 @@ from fastapi import UploadFile, HTTPException
 import fitz  # PyMuPDF
 from docx import Document
 from pptx import Presentation
+from ..config import logger
 
 def _extract_text_from_pdf(file_stream: io.BytesIO) -> str:
     """Extracts text from a PDF file stream."""
@@ -105,5 +106,5 @@ def extract_learning_items_from_text(text: str) -> dict:
         validated_response = ParsedItems.model_validate(json_response)
         return validated_response.model_dump()
     except Exception as e:
-        print(f"Failed to validate parser AI response: {e}")
+        logger.error(f"Failed to validate parser AI response: {e}")
         return {"items": []}
