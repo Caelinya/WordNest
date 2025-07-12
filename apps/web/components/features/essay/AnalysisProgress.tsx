@@ -21,31 +21,31 @@ const PROGRESS_STAGES = [
     description: "Preparing to analyze your essay content"
   },
   {
-    threshold: 15,
+    threshold: 12,
     message: "Analyzing grammar structure...",
     icon: Brain,
     description: "Checking grammar, sentence structure, and expression"
   },
   {
-    threshold: 35,
+    threshold: 28,
     message: "Evaluating content quality...",
     icon: Brain,
     description: "Analyzing arguments, logic, and content depth"
   },
   {
-    threshold: 55,
+    threshold: 45,
     message: "Checking language expression...",
     icon: Brain,
     description: "Evaluating vocabulary usage and language fluency"
   },
   {
-    threshold: 75,
+    threshold: 65,
     message: "Generating improvement suggestions...",
     icon: Zap,
     description: "Preparing personalized improvement recommendations"
   },
   {
-    threshold: 90,
+    threshold: 82,
     message: "Completing final scoring...",
     icon: Zap,
     description: "Calculating scores and generating report"
@@ -70,35 +70,55 @@ export function AnalysisProgress({ isAnalyzing, onCancel, modelName }: AnalysisP
     const startTime = Date.now();
     
     const timer = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - startTime) / 1000);
-      setElapsedTime(elapsed);
+      const elapsed = (Date.now() - startTime) / 1000; // 使用更精确的时间
+      setElapsedTime(Math.floor(elapsed));
 
       // 显示慢速警告（60秒后）
       if (elapsed >= 60 && !showSlowWarning) {
         setShowSlowWarning(true);
       }
 
-      // 进度条逻辑：前60秒线性增长到80%，之后指数递减增长
+      // 更平滑的进度条逻辑
       let newProgress;
-      if (elapsed <= 60) {
-        // 前60秒线性增长到80%
-        newProgress = Math.min((elapsed / 60) * 80, 80);
+      if (elapsed <= 45) {
+        // 前45秒平滑增长到70%
+        newProgress = (elapsed / 45) * 70;
+      } else if (elapsed <= 90) {
+        // 45-90秒继续增长到85%
+        const progressInPhase = (elapsed - 45) / 45;
+        newProgress = 70 + progressInPhase * 15;
       } else {
-        // 60秒后指数递减增长，逐渐接近但不超过95%
-        const overtime = elapsed - 60;
-        const exponentialGrowth = 80 + 15 * (1 - Math.exp(-overtime / 30));
-        newProgress = Math.min(exponentialGrowth, 95);
+        // 90秒后缓慢接近95%，使用更平滑的函数
+        const overtime = elapsed - 90;
+        const slowGrowth = 85 + 10 * (1 - Math.exp(-overtime / 40));
+        newProgress = Math.min(slowGrowth, 95);
       }
 
-      setProgress(newProgress);
+      // 使用动画函数让进度更平滑
+      setProgress(prev => {
+        const diff = newProgress - prev;
+        // 如果差距较大，使用插值让变化更平滑
+        if (Math.abs(diff) > 2) {
+          return prev + diff * 0.3; // 缓慢追赶目标进度
+        }
+        return newProgress;
+      });
 
-      // 更新当前阶段
-      const stage = PROGRESS_STAGES.findIndex((s, i) => 
-        newProgress >= s.threshold && 
-        (i === PROGRESS_STAGES.length - 1 || newProgress < PROGRESS_STAGES[i + 1].threshold)
-      );
-      setCurrentStage(Math.max(0, stage));
-    }, 1000);
+      // 更平滑的阶段切换逻辑 - 使用当前进度值
+      setProgress(currentProgress => {
+        const nextStageIndex = PROGRESS_STAGES.findIndex((stage, i) => 
+          currentProgress >= stage.threshold && 
+          (i === PROGRESS_STAGES.length - 1 || currentProgress < PROGRESS_STAGES[i + 1].threshold)
+        );
+        
+        if (nextStageIndex !== -1 && nextStageIndex !== currentStage) {
+          // 延迟切换阶段，避免闪烁
+          setTimeout(() => setCurrentStage(nextStageIndex), 300);
+        }
+        
+        return currentProgress;
+      });
+    }, 200); // 更高频率的更新，让进度条更平滑
 
     return () => clearInterval(timer);
   }, [isAnalyzing, showSlowWarning]);
@@ -152,7 +172,7 @@ export function AnalysisProgress({ isAnalyzing, onCancel, modelName }: AnalysisP
             <span className="font-medium">{currentStageInfo.message}</span>
             <span className="text-muted-foreground">{Math.round(progress)}%</span>
           </div>
-          <Progress value={progress} className="h-2" />
+          <Progress value={progress} className="h-2 transition-all duration-300 ease-out" />
           <p className="text-xs text-muted-foreground">
             {currentStageInfo.description}
           </p>

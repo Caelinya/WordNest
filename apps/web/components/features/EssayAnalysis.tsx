@@ -29,14 +29,20 @@ import { SuggestionPanel } from "./essay/SuggestionPanel";
 import { AnalysisProgress } from "./essay/AnalysisProgress";
 import { Loader2, FileText, Sparkles, Save } from "lucide-react";
 
-export function EssayAnalysis() {
+interface EssayAnalysisProps {
+  initialEssayId?: number;
+  initialContent?: string;
+}
+
+export function EssayAnalysis({ initialEssayId, initialContent }: EssayAnalysisProps = {}) {
   const [title, setTitle] = useState("");
   const [question, setQuestion] = useState("");
-  const [content, setContent] = useState("");
+  const [content, setContent] = useState(initialContent || "");
   const [essayType, setEssayType] = useState<"application" | "continuation">("application");
   const [analysisResult, setAnalysisResult] = useState<EssayAnalysisResponse | null>(null);
   const [currentEssay, setCurrentEssay] = useState<Essay | null>(null);
   const [currentModel, setCurrentModel] = useState<string | undefined>(undefined);
+  const [isLoadingEssay, setIsLoadingEssay] = useState(false);
 
   const { isAuthenticated } = useAuth();
 
@@ -46,6 +52,49 @@ export function EssayAnalysis() {
     queryFn: essayApi.getConfig,
     enabled: isAuthenticated,
   });
+
+  // Load essay data if initialEssayId is provided
+  useEffect(() => {
+    if (initialEssayId && isAuthenticated) {
+      loadEssayData(initialEssayId);
+    }
+  }, [initialEssayId, isAuthenticated]);
+
+  // Handle URL parameters for content
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const contentParam = urlParams.get('content');
+      if (contentParam && !initialContent) {
+        setContent(decodeURIComponent(contentParam));
+      }
+    }
+  }, [initialContent]);
+
+  const loadEssayData = async (essayId: number) => {
+    try {
+      setIsLoadingEssay(true);
+      const essayData = await essayApi.get(essayId);
+      
+      setCurrentEssay(essayData);
+      setTitle(essayData.title);
+      setQuestion(essayData.question);
+      setEssayType(essayData.type as "application" | "continuation");
+      
+      // If there's no initial content provided, try to load the latest version
+      if (!initialContent && essayData.versions && essayData.versions.length > 0) {
+        const versions = await essayApi.getVersions(essayId);
+        if (versions.length > 0) {
+          setContent(versions[0].content);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load essay:", error);
+      toast.error("Failed to load essay data");
+    } finally {
+      setIsLoadingEssay(false);
+    }
+  };
 
   const analyzeEssayMutation = useMutation({
     mutationFn: async (data: EssayAnalysisRequest) => {
@@ -142,6 +191,17 @@ export function EssayAnalysis() {
     );
   }
 
+  if (isLoadingEssay) {
+    return (
+      <div className="container mx-auto flex min-h-screen items-center justify-center">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <p>Loading essay data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto max-w-7xl space-y-6">
       {/* Header */}
@@ -215,7 +275,7 @@ export function EssayAnalysis() {
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   rows={12}
-                  className="font-mono text-sm"
+                  className="essay-content"
                 />
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span>Words: {content.trim().split(/\s+/).filter(word => word.length > 0).length}</span>

@@ -314,10 +314,25 @@ class AIService:
         2. Overall assessment
         3. Multiple specific improvement suggestions (aim for 5-8 suggestions across different categories)
 
+        CRITICAL SCORING REMINDERS:
+        - This is written by a high school student with above-average English proficiency
+        - A grades should be EXTREMELY RARE - only for work that significantly exceeds high school expectations
+        - Most competent high school essays should receive B-C grades in most categories
+        - Be realistic about what constitutes exceptional vs. typical high school performance
+        - Do not inflate scores - maintain academic rigor appropriate for the level
+
+        IMPORTANT: For ALL suggestions, you MUST provide:
+        - "original": The exact text from the essay that needs improvement (copy word-for-word)
+        - "suggestion": The specific improved replacement text
+        - "position": Specific location like "paragraph 1, sentence 2" or "line 3"
+        - "explanation": Clear reason for the improvement
+
         For suggestions, please provide:
-        - Multiple vocabulary improvements (2-3 suggestions)
-        - Multiple language/grammar improvements (2-3 suggestions)
-        - Structure/content improvements (1-2 suggestions)
+        - Multiple vocabulary improvements (2-20 suggestions) - exact word replacements
+        - Multiple language/grammar improvements (2-15 suggestions) - exact sentence/phrase replacements
+        - Structure/content improvements (1-3 suggestions) - specific, relevant, text additions or replacements
+
+        Every suggestion must be directly applicable by replacing the "original" text with the "suggestion" text.
 
         {json_example}
         """
@@ -343,68 +358,80 @@ class AIService:
     def _get_application_essay_prompt(self) -> str:
         """Get scoring prompt for application essays"""
         return """
-        You are evaluating an application essay (total: 15 points) with these criteria:
+        You are evaluating an application essay (total: 15 points) written by high school students with above-average English proficiency. 
+        
+        SCORING GUIDELINES:
+        - Expected baseline for competent high school students: 9 points (B-C level across categories)
+        - Perfect score (all A grades): 13 points - EXTREMELY RARE, only for exceptional work
+        - Grade A should be given sparingly - only when performance significantly exceeds high school expectations
+        - Most good high school essays should score in 8-11 point range
 
         1. Element Completeness (4 points):
-           - A (4): All required elements complete, content substantial
-           - B (3): Elements mostly complete, content fairly substantial
-           - C (2): Elements somewhat incomplete, content average
-           - D (1): Missing important elements, content simple
-           - E (0): Seriously missing elements, content empty
+           - A (4): ALL required elements complete with exceptional depth and insight beyond typical high school level
+           - B (3): Elements complete, content substantial and well-developed for high school level
+           - C (2): Elements mostly complete, content adequate for high school level
+           - D (1): Missing some important elements, content simple but acceptable
+           - E (0): Seriously missing elements, content insufficient
 
         2. Format Specification (4 points):
-           - A (4): Format completely correct, layout beautiful
-           - B (3): Format mostly correct, layout good
-           - C (2): Format with minor errors, layout average
-           - D (1): Format with many errors, layout messy
-           - E (0): Format seriously wrong, non-compliant
+           - A (4): Format perfect AND demonstrates sophisticated understanding of genre conventions
+           - B (3): Format correct with good layout and organization
+           - C (2): Format mostly correct with minor issues typical of high school work
+           - D (1): Format errors that don't seriously impede understanding
+           - E (0): Format seriously wrong, difficult to follow
 
         3. Language Expression (4 points):
-           - A (4): Language fluent, expression accurate, vocabulary rich
-           - B (3): Language fairly fluent, expression fairly accurate
-           - C (2): Language basically fluent, expression basically accurate
-           - D (1): Language not fluent enough, expression has errors
-           - E (0): Language expression has serious problems
+           - A (4): Language exceptionally fluent with sophisticated vocabulary and varied sentence structures beyond typical high school level
+           - B (3): Language fluent and accurate with good vocabulary for high school level
+           - C (2): Language generally fluent with occasional errors typical of high school students
+           - D (1): Language adequate but with noticeable errors that sometimes affect clarity
+           - E (0): Language problems seriously impede understanding
 
         4. Handwriting Quality (3 points):
-           - A (3): Handwriting neat, paper clean
-           - B (2): Handwriting fairly neat, paper fairly clean
-           - C (1): Handwriting average, paper average
-           - D (0): Handwriting messy, paper messy
+           - A (3): Exceptionally neat and professional presentation
+           - B (2): Neat and clearly readable
+           - C (1): Generally readable with typical high school presentation
+           - D (0): Difficult to read or messy presentation
         """
 
     def _get_continuation_essay_prompt(self) -> str:
         """Get scoring prompt for continuation essays"""
         return """
-        You are evaluating a continuation writing essay (total: 25 points) with these criteria:
+        You are evaluating a continuation writing essay (total: 25 points) written by high school students with above-average English proficiency.
+        
+        SCORING GUIDELINES:
+        - Expected baseline for competent high school students: 16 points (B-C level across categories)
+        - Perfect score (all A grades): 23 points - EXTREMELY RARE, only for exceptional creative writing
+        - Grade A should be given sparingly - only when performance significantly exceeds high school expectations
+        - Most good high school essays should score in 14-19 point range
 
         1. Plot Coherence (7 points):
-           - A (6-7): Plot develops naturally, highly consistent with original
-           - B (5): Plot develops fairly naturally, fairly consistent with original
-           - C (3-4): Plot development basically reasonable, basically consistent
-           - D (1-2): Plot development unreasonable, low consistency
-           - E (0): Plot development unreasonable, seriously disconnected
+           - A (6-7): Plot develops with exceptional creativity and sophistication, seamlessly consistent with original, shows advanced narrative understanding
+           - B (5): Plot develops naturally and is well-integrated with original story, shows good narrative sense
+           - C (3-4): Plot development reasonable and generally consistent, typical of competent high school writing
+           - D (1-2): Plot development has logical issues but attempts coherence
+           - E (0): Plot development seriously disconnected or illogical
 
         2. Language Expression (6 points):
-           - A (6): Language vivid, expression accurate, vocabulary rich and varied
-           - B (5): Language fairly vivid, expression fairly accurate, vocabulary fairly rich
-           - C (3-4): Language basically appropriate, expression basically accurate
-           - D (1-2): Language expression problematic, vocabulary poor
-           - E (0): Language expression seriously wrong
+           - A (6): Language exceptionally vivid and sophisticated, demonstrates advanced vocabulary and literary techniques beyond typical high school level
+           - B (5): Language vivid and engaging with good vocabulary range for high school level
+           - C (3-4): Language generally appropriate with adequate expression typical of high school students
+           - D (1-2): Language adequate but with noticeable limitations in expression
+           - E (0): Language expression seriously impedes understanding
 
         3. Theme Enhancement (6 points):
-           - A (6): Theme clear, emotions genuine, deep thinking
-           - B (5): Theme fairly clear, emotions fairly genuine
-           - C (3-4): Theme basically clear, emotions basically genuine
-           - D (1-2): Theme unclear, insufficient emotional expression
-           - E (0): Theme unclear, lacks emotion
+           - A (6): Theme exceptionally well-developed with profound insights and sophisticated emotional depth beyond typical high school level
+           - B (5): Theme clear with good emotional expression and meaningful development
+           - C (3-4): Theme reasonably clear with adequate emotional expression typical of high school work
+           - D (1-2): Theme somewhat unclear but shows some emotional understanding
+           - E (0): Theme unclear or lacks meaningful emotional content
 
         4. Handwriting Quality (6 points):
-           - A (5-6): Handwriting neat and beautiful, paper very clean
-           - B (4): Handwriting neat, paper clean
-           - C (2-3): Handwriting fairly neat, paper fairly clean
-           - D (1): Handwriting average, paper average
-           - E (0): Handwriting messy, paper messy
+           - A (5-6): Exceptionally neat presentation that enhances readability, professional quality
+           - B (4): Neat and well-organized presentation
+           - C (2-3): Generally neat and readable, typical high school presentation
+           - D (1): Adequate readability despite some presentation issues
+           - E (0): Poor presentation that impedes readability
         """
 
     def _get_json_example(self, essay_type: str, max_score: int) -> str:
@@ -414,12 +441,12 @@ class AIService:
         Return the response in the following JSON format (use the exact category names):
         {
             "scores": {
-                "Element Completeness": {"score": 3, "max": 4, "grade": "B", "feedback": "The essay includes all required elements but could be more detailed."},
-                "Format Specification": {"score": 3, "max": 4, "grade": "B", "feedback": "Format is mostly correct with minor layout issues."},
-                "Language Expression": {"score": 2, "max": 4, "grade": "C", "feedback": "Language is basically fluent but vocabulary could be richer."},
-                "Handwriting Quality": {"score": 2, "max": 3, "grade": "C", "feedback": "Handwriting is average and readable."}
+                "Element Completeness": {"score": 2, "max": 4, "grade": "C", "feedback": "The essay includes most required elements with adequate content for high school level."},
+                "Format Specification": {"score": 3, "max": 4, "grade": "B", "feedback": "Format is correct with good organization typical of competent high school work."},
+                "Language Expression": {"score": 2, "max": 4, "grade": "C", "feedback": "Language is generally fluent with occasional errors typical of high school students."},
+                "Handwriting Quality": {"score": 2, "max": 3, "grade": "B", "feedback": "Neat and clearly readable presentation."}
             },
-            "total_score": 10,
+            "total_score": 9,
             "max_score": 15,
             "suggestion_cards": [
                 {
@@ -429,8 +456,30 @@ class AIService:
                     "data": {
                         "original": "good",
                         "suggestion": "excellent",
-                        "position": "paragraph 2, line 3",
-                        "explanation": "Use more impactful vocabulary"
+                        "position": "paragraph 2, sentence 1",
+                        "explanation": "Use more impactful vocabulary to strengthen your argument"
+                    }
+                },
+                {
+                    "card_id": "lang_1",
+                    "type": "language",
+                    "priority": "medium",
+                    "data": {
+                        "original": "I am writing to apply for the position.",
+                        "suggestion": "I am writing to express my strong interest in applying for the position.",
+                        "position": "paragraph 1, sentence 1",
+                        "explanation": "More formal and enthusiastic opening statement"
+                    }
+                },
+                {
+                    "card_id": "struct_1",
+                    "type": "structure",
+                    "priority": "medium",
+                    "data": {
+                        "original": "Thank you.",
+                        "suggestion": "Thank you for considering my application. I look forward to hearing from you soon.",
+                        "position": "paragraph 3, sentence 3",
+                        "explanation": "More complete and professional closing"
                     }
                 }
             ]
@@ -441,12 +490,12 @@ class AIService:
         Return the response in the following JSON format (use the exact category names):
         {
             "scores": {
-                "Plot Coherence": {"score": 5, "max": 7, "grade": "B", "feedback": "Plot develops fairly naturally and is consistent with the original."},
-                "Language Expression": {"score": 4, "max": 6, "grade": "C", "feedback": "Language is basically appropriate but could be more vivid."},
-                "Theme Enhancement": {"score": 4, "max": 6, "grade": "C", "feedback": "Theme is basically clear but emotions could be more genuine."},
-                "Handwriting Quality": {"score": 3, "max": 6, "grade": "C", "feedback": "Handwriting is fairly neat and readable."}
+                "Plot Coherence": {"score": 4, "max": 7, "grade": "C", "feedback": "Plot development reasonable and generally consistent, typical of competent high school writing."},
+                "Language Expression": {"score": 3, "max": 6, "grade": "C", "feedback": "Language generally appropriate with adequate expression typical of high school students."},
+                "Theme Enhancement": {"score": 3, "max": 6, "grade": "C", "feedback": "Theme reasonably clear with adequate emotional expression typical of high school work."},
+                "Handwriting Quality": {"score": 3, "max": 6, "grade": "C", "feedback": "Generally neat and readable, typical high school presentation."}
             },
-            "total_score": 16,
+            "total_score": 13,
             "max_score": 25,
             "suggestion_cards": [
                 {
@@ -456,8 +505,41 @@ class AIService:
                     "data": {
                         "original": "said",
                         "suggestion": "whispered",
-                        "position": "paragraph 3, line 2",
-                        "explanation": "Use more descriptive dialogue tags"
+                        "position": "paragraph 2, sentence 3",
+                        "explanation": "Use more descriptive dialogue tags to enhance narrative impact"
+                    }
+                },
+                {
+                    "card_id": "lang_1",
+                    "type": "language",
+                    "priority": "medium",
+                    "data": {
+                        "original": "He walked to the door.",
+                        "suggestion": "He cautiously approached the creaking door, his heart pounding with anticipation.",
+                        "position": "paragraph 1, sentence 2",
+                        "explanation": "Add more descriptive language and emotion to enhance the narrative"
+                    }
+                },
+                {
+                    "card_id": "struct_1",
+                    "type": "structure",
+                    "priority": "medium",
+                    "data": {
+                        "original": "It was dark.",
+                        "suggestion": "The room was shrouded in an eerie darkness that seemed to swallow every ray of light.",
+                        "position": "paragraph 1, sentence 1",
+                        "explanation": "Expand simple descriptions to create more vivid imagery and atmosphere"
+                    }
+                },
+                {
+                    "card_id": "vocab_2",
+                    "type": "vocabulary",
+                    "priority": "low",
+                    "data": {
+                        "original": "big",
+                        "suggestion": "enormous",
+                        "position": "paragraph 3, sentence 1",
+                        "explanation": "Use more precise and impactful adjectives"
                     }
                 }
             ]

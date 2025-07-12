@@ -54,7 +54,7 @@ const getTypeLabel = (type: string) => {
       return "Vocabulary";
     case "language":
       return "Language";
-    case "rewrite":
+    case "structure":
       return "Structure";
     default:
       return type;
@@ -72,8 +72,8 @@ export function SuggestionPanel({ suggestions, content, onContentChange }: Sugge
         // Simple word replacement
         const regex = new RegExp(`\\b${suggestion.data.original}\\b`, 'gi');
         newContent = newContent.replace(regex, suggestion.data.suggestion);
-      } else if (suggestion.type === "language" && suggestion.data.original && suggestion.data.suggestion) {
-        // Sentence/phrase replacement
+      } else if ((suggestion.type === "language" || suggestion.type === "structure") && suggestion.data.original && suggestion.data.suggestion) {
+        // Sentence/phrase replacement for both language and structure suggestions
         newContent = newContent.replace(suggestion.data.original, suggestion.data.suggestion);
       }
       
@@ -178,13 +178,13 @@ export function SuggestionPanel({ suggestions, content, onContentChange }: Sugge
                     <div className="space-y-2">
                       <div className="space-y-1">
                         <div className="text-xs text-muted-foreground">Original:</div>
-                        <div className="text-sm bg-red-50 dark:bg-red-950/20 text-red-900 dark:text-red-100 p-2 rounded border-l-2 border-red-200 dark:border-red-800">
+                        <div className="font-essay text-sm bg-red-50 dark:bg-red-950/20 text-red-900 dark:text-red-100 p-2 rounded border-l-2 border-red-200 dark:border-red-800 leading-relaxed">
                           {suggestion.data.original}
                         </div>
                       </div>
                       <div className="space-y-1">
                         <div className="text-xs text-muted-foreground">Suggestion:</div>
-                        <div className="text-sm bg-green-50 dark:bg-green-950/20 text-green-900 dark:text-green-100 p-2 rounded border-l-2 border-green-200 dark:border-green-800">
+                        <div className="font-essay text-sm bg-green-50 dark:bg-green-950/20 text-green-900 dark:text-green-100 p-2 rounded border-l-2 border-green-200 dark:border-green-800 leading-relaxed">
                           {suggestion.data.suggestion}
                         </div>
                       </div>
@@ -207,25 +207,29 @@ export function SuggestionPanel({ suggestions, content, onContentChange }: Sugge
                     </div>
                   )}
 
-                  {suggestion.type === "rewrite" && (
+                  {suggestion.type === "structure" && (
                     <div className="space-y-2">
-                      <p className="text-sm">{suggestion.data.explanation}</p>
-                      {suggestion.data.suggestions && (
-                        <ul className="text-xs space-y-1">
-                          {suggestion.data.suggestions.map((item: string, index: number) => (
-                            <li key={index} className="flex items-center gap-1">
-                              <div className="w-1 h-1 bg-blue-500 rounded-full" />
-                              {item}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Original:</div>
+                        <div className="font-essay text-sm bg-red-50 dark:bg-red-950/20 text-red-900 dark:text-red-100 p-2 rounded border-l-2 border-red-200 dark:border-red-800 leading-relaxed">
+                          {suggestion.data.original}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Suggestion:</div>
+                        <div className="font-essay text-sm bg-green-50 dark:bg-green-950/20 text-green-900 dark:text-green-100 p-2 rounded border-l-2 border-green-200 dark:border-green-800 leading-relaxed">
+                          {suggestion.data.suggestion}
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {suggestion.data.explanation}
+                      </p>
                     </div>
                   )}
 
                   {/* Actions */}
                   <div className="flex gap-2 pt-2">
-                    {(suggestion.type === "vocabulary" || suggestion.type === "language") && 
+                    {(suggestion.type === "vocabulary" || suggestion.type === "language" || suggestion.type === "structure") && 
                      suggestion.data.original && suggestion.data.suggestion && (
                       <Button
                         size="sm"

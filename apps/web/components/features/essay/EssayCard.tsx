@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { MoreHorizontal, Trash2, FileText, Calendar, TrendingUp } from "lucide-react";
+import { MoreHorizontal, Trash2, FileText, Calendar, TrendingUp, Sparkles } from "lucide-react";
 import { essayApi } from "@/lib/api";
 import { formatDistanceToNow } from "date-fns";
 import { Essay } from "@/types/notes";
@@ -98,6 +98,12 @@ export function EssayCard({ essay, onUpdate }: EssayCardProps) {
                       <Link href={`/essays/${essay.id}`} className="cursor-pointer">
                         <FileText className="h-4 w-4 mr-2" />
                         View Details
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href={`/essays?edit=${essay.id}`} className="cursor-pointer">
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Continue Analysis
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem

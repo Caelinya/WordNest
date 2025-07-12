@@ -8,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Calendar, TrendingUp, FileText, Clock } from "lucide-react";
+import { ArrowLeft, Calendar, TrendingUp, FileText, Clock, Sparkles } from "lucide-react";
+import Link from "next/link";
 import { formatDistanceToNow, format } from "date-fns";
 import { Progress } from "@/components/ui/progress";
 import { CircularProgress } from "@/components/ui/circular-progress";
@@ -259,12 +260,18 @@ export default function EssayDetailPage() {
                             {Math.round((selectedVersion.total_score / selectedVersion.max_score) * 100)}%
                           </div>
                         </CircularProgress>
-                        <div>
+                        <div className="flex-1">
                           <div className="text-lg font-bold">Version {selectedVersion.version_number}</div>
                           <div className="text-sm text-muted-foreground">
                             {selectedVersion.total_score}/{selectedVersion.max_score} points
                           </div>
                         </div>
+                        <Button asChild size="sm" variant="outline">
+                          <Link href={`/essays?edit=${essay.id}&content=${encodeURIComponent(selectedVersion.content)}`}>
+                            <Sparkles className="h-4 w-4 mr-2" />
+                            Analyze Again
+                          </Link>
+                        </Button>
                       </div>
                     </CardTitle>
                   </CardHeader>
@@ -321,7 +328,7 @@ export default function EssayDetailPage() {
                   <CardContent>
                     <div className="p-6 rounded-lg bg-muted/20 border border-border/30">
                       <div className="prose prose-sm max-w-none dark:prose-invert">
-                        <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground bg-transparent border-none p-0 m-0">
+                        <pre className="whitespace-pre-wrap essay-content text-foreground bg-transparent border-none p-0 m-0">
                           {selectedVersion.content}
                         </pre>
                       </div>
@@ -342,9 +349,15 @@ export default function EssayDetailPage() {
               <div className="mx-auto w-16 h-16 rounded-full bg-muted/30 flex items-center justify-center">
                 <FileText className="h-8 w-8 opacity-50" />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <p className="text-lg font-medium text-foreground">No versions available</p>
                 <p className="text-sm">Analyze this essay to create the first version and see detailed scores.</p>
+                <Button asChild>
+                  <Link href={`/essays?edit=${essay.id}`}>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Start Analysis
+                  </Link>
+                </Button>
               </div>
             </div>
           </CardContent>
