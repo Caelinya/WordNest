@@ -12,6 +12,7 @@ from .schemas import (
     EssayVersionSummary
 )
 from .services.ai_service import AIService
+from .config import settings
 
 router = APIRouter()
 
@@ -93,6 +94,15 @@ async def get_essays(
         essay_responses.append(essay_response)
 
     return essay_responses
+
+@router.get("/config")
+async def get_essay_config(current_user: User = Depends(get_current_user)):
+    """Get current essay analysis configuration"""
+    return {
+        "essay_model": settings.ESSAY_AI_MODEL or settings.AI_MODEL,
+        "default_model": settings.AI_MODEL,
+        "embedding_model": settings.EMBEDDING_MODEL
+    }
 
 @router.get("/{essay_id}", response_model=EssayResponse)
 async def get_essay(
@@ -280,7 +290,7 @@ async def analyze_essay(
             max_score=analysis_result["max_score"],
             suggestion_cards=analysis_result["suggestion_cards"]
         )
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

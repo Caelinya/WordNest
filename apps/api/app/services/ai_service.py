@@ -38,6 +38,7 @@ if validate_ai_config():
         client = OpenAI(
             api_key=settings.API_KEY,
             base_url=settings.BASE_URL,
+            timeout=300.0,
         )
         logger.info("AI service client initialized successfully")
     except Exception as e:

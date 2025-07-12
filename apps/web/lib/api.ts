@@ -8,6 +8,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 300000,
 });
 
 // Add a request interceptor to include the auth token
@@ -233,6 +234,12 @@ export const practiceListsApi = {
 
 // Essay API
 export const essayApi = {
+  // Configuration
+  getConfig: async (): Promise<{ essay_model: string; default_model: string; embedding_model: string }> => {
+    const response = await api.get("/essays/config");
+    return response.data;
+  },
+
   // Analysis
   analyze: async (data: EssayAnalysisRequest): Promise<EssayAnalysisResponse> => {
     const response = await api.post("/essays/analyze", data);

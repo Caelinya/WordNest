@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import api, { essayApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { EssayAnalysisRequest, EssayAnalysisResponse, Essay } from "@/types/notes";
 import { ScoreBar } from "./essay/ScoreBar";
 import { SuggestionPanel } from "./essay/SuggestionPanel";
+import { AnalysisProgress } from "./essay/AnalysisProgress";
 import { Loader2, FileText, Sparkles, Save } from "lucide-react";
 
 export function EssayAnalysis() {
@@ -35,19 +36,31 @@ export function EssayAnalysis() {
   const [essayType, setEssayType] = useState<"application" | "continuation">("application");
   const [analysisResult, setAnalysisResult] = useState<EssayAnalysisResponse | null>(null);
   const [currentEssay, setCurrentEssay] = useState<Essay | null>(null);
+  const [currentModel, setCurrentModel] = useState<string | undefined>(undefined);
 
   const { isAuthenticated } = useAuth();
 
+  // Get current AI model configuration
+  const { data: configData } = useQuery({
+    queryKey: ['essay-config'],
+    queryFn: essayApi.getConfig,
+    enabled: isAuthenticated,
+  });
+
   const analyzeEssayMutation = useMutation({
     mutationFn: async (data: EssayAnalysisRequest) => {
+      // Set current model from configuration
+      setCurrentModel(configData?.essay_model || "AI Model");
       return await essayApi.analyze(data);
     },
     onSuccess: (data: EssayAnalysisResponse) => {
       setAnalysisResult(data);
+      setCurrentModel(undefined);
       toast.success("Essay analysis completed!");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.detail || "Analysis failed");
+      setCurrentModel(undefined);
+      toast.error(error.response?.data?.detail || "Analysis failed, please try again");
     },
   });
 
@@ -114,6 +127,13 @@ export function EssayAnalysis() {
     saveVersionMutation.mutate();
   };
 
+  const handleCancelAnalysis = () => {
+    // Note: We cannot actually cancel an ongoing HTTP request
+    // But we can reset the state to let the user know the operation was cancelled
+    setCurrentModel(undefined);
+    toast.info("Analysis cancelled");
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="container mx-auto flex min-h-screen items-center justify-center">
@@ -151,7 +171,7 @@ export function EssayAnalysis() {
             <CardContent className="space-y-4">
               {/* Title */}
               <div className="space-y-2">
-                <Label htmlFor="title">Title (Optional)</Label>
+                <Label htmlFor="title">Title</Label>
                 <Input
                   id="title"
                   placeholder="Enter essay title..."
@@ -251,7 +271,17 @@ export function EssayAnalysis() {
 
         {/* Right Panel - Results */}
         <div className="space-y-4">
-          {analysisResult ? (
+          {/* Show analysis progress */}
+          {analyzeEssayMutation.isPending && (
+            <AnalysisProgress
+              isAnalyzing={analyzeEssayMutation.isPending}
+              onCancel={handleCancelAnalysis}
+              modelName={currentModel}
+            />
+          )}
+
+          {/* Show analysis results */}
+          {analysisResult && !analyzeEssayMutation.isPending ? (
             <>
               <ScoreBar
                 scores={analysisResult.scores}
@@ -265,7 +295,7 @@ export function EssayAnalysis() {
                 onContentChange={setContent}
               />
             </>
-          ) : (
+          ) : !analyzeEssayMutation.isPending ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12 text-center">
                 <FileText className="h-12 w-12 text-muted-foreground mb-4" />
@@ -275,7 +305,7 @@ export function EssayAnalysis() {
                 </p>
               </CardContent>
             </Card>
-          )}
+          ) : null}
         </div>
       </div>
     </div>
