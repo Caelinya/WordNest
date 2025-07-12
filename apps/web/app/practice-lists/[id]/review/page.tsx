@@ -9,6 +9,7 @@ import { practiceListsApi } from "@/lib/api";
 import { PracticeListItem, PracticeList } from "@/types/notes";
 import { Flashcard } from "@/components/features/review/Flashcard";
 import { FlashcardData } from "@/hooks/use-flashcard";
+import { SessionComplete } from "@/components/features/review/SessionComplete";
 
 export default function PracticeListReviewPage() {
   const params = useParams();
@@ -124,23 +125,18 @@ export default function PracticeListReviewPage() {
 
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         {isSessionComplete ? (
-          <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4">Session Complete!</h2>
-            <p className="text-muted-foreground mb-6">
-              Great job! You&apos;ve reviewed all available cards.
-            </p>
-            <div className="flex gap-4 justify-center">
-              <Button
-                variant="outline"
-                onClick={() => router.push(`/practice-lists/${listId}`)}
-              >
-                Back to List
-              </Button>
-              <Button onClick={handleRestart}>
-                Review Again
-              </Button>
-            </div>
-          </div>
+          <SessionComplete
+            title="Session Complete!"
+            description="Great job! You've reviewed all available cards."
+            primaryButton={{
+              text: "Review Again",
+              onClick: handleRestart
+            }}
+            secondaryButton={{
+              text: "Back to List",
+              onClick: () => router.push(`/practice-lists/${listId}`)
+            }}
+          />
         ) : currentCard ? (
           <div className="w-full max-w-2xl">
             <Flashcard
@@ -158,15 +154,14 @@ export default function PracticeListReviewPage() {
             </div>
           </div>
         ) : (
-          <div className="text-center">
-            <p className="text-muted-foreground">No cards to review</p>
-            <Button
-              className="mt-4"
-              onClick={() => router.push(`/practice-lists/${listId}`)}
-            >
-              Back to List
-            </Button>
-          </div>
+          <SessionComplete
+            title="No Cards to Review"
+            description="There are currently no cards available for review."
+            primaryButton={{
+              text: "Back to List",
+              onClick: () => router.push(`/practice-lists/${listId}`)
+            }}
+          />
         )}
       </div>
     </div>

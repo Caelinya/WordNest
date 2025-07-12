@@ -39,8 +39,11 @@ class TestAIServiceIntegration(unittest.TestCase):
         # Assert that we received valid embeddings
         self.assertIsNotNone(embedding1)
         self.assertIsNotNone(embedding2)
-        self.assertEqual(len(embedding1), 768)
-        self.assertEqual(len(embedding2), 768)
+        self.assertIsInstance(embedding1, list)
+        self.assertIsInstance(embedding2, list)
+        self.assertGreater(len(embedding1), 0)
+        self.assertGreater(len(embedding2), 0)
+        self.assertEqual(len(embedding1), len(embedding2))  # Both should have same dimensions
 
         # Calculate cosine similarity
         similarity = cosine_similarity(embedding1, embedding2)

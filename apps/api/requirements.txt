@@ -16,3 +16,4 @@ psycopg2-binary
 pgvector
 sentence-transformers
 backoff
+email-validator

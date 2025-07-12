@@ -1,6 +1,8 @@
-from sqlmodel import SQLModel
+from sqlmodel import SQLModel, Field
 from typing import List, Optional
 from datetime import datetime
+from pydantic import field_validator, EmailStr
+import re
 
 # --- Tag Schemas ---
 
@@ -45,9 +47,29 @@ class NoteUpdate(SQLModel):
 # --- User Schemas ---
 
 class UserCreate(SQLModel):
-    username: str
-    email: str
-    password: str
+    username: str = Field(min_length=3, max_length=50)
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=128)
+
+    @field_validator('password')
+    @classmethod
+    def validate_password_strength(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        if not re.search(r'[A-Z]', v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not re.search(r'[a-z]', v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        if not re.search(r'\d', v):
+            raise ValueError('Password must contain at least one digit')
+        return v
+
+    @field_validator('username')
+    @classmethod
+    def validate_username(cls, v):
+        if not re.match(r'^[a-zA-Z0-9_]+$', v):
+            raise ValueError('Username can only contain letters, numbers, and underscores')
+        return v
 
 class UserRead(SQLModel):
     id: int

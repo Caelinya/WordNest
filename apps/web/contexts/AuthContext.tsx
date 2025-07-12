@@ -48,7 +48,7 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
 
   const login = (token: string, userData: User) => {
     setUser(userData);
-    setCookie('auth_token', token, { maxAge: 60 * 60 * 24 * 7 }); // 7 days
+    setCookie('auth_token', token, { maxAge: 60 * 30 }); // 30 minutes to match JWT expiry
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   };
 
