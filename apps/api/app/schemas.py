@@ -146,6 +146,14 @@ class EssayCreate(SQLModel):
             raise ValueError('Essay type must be either "application" or "continuation"')
         return v
 
+class EssayVersionSummary(SQLModel):
+    """Simplified version info for essay list responses"""
+    id: int
+    version_number: int
+    total_score: int
+    max_score: int
+    created_at: datetime
+
 class EssayResponse(SQLModel):
     id: int
     title: str
@@ -154,6 +162,7 @@ class EssayResponse(SQLModel):
     created_at: datetime
     updated_at: datetime
     owner_id: int
+    versions: List[EssayVersionSummary] = []
 
 class EssayVersionCreate(SQLModel):
     content: str

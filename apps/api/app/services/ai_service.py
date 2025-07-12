@@ -297,6 +297,9 @@ class AIService:
             max_score = 25
             scoring_prompt = self._get_continuation_essay_prompt()
 
+        # Get the JSON format example based on essay type
+        json_example = self._get_json_example(essay_type, max_score)
+
         # Create the analysis prompt
         analysis_prompt = f"""
         {scoring_prompt}
@@ -315,70 +318,7 @@ class AIService:
         - Multiple language/grammar improvements (2-3 suggestions)
         - Structure/content improvements (1-2 suggestions)
 
-        Return the response in the following JSON format:
-        {{
-            "scores": {{
-                "category1": {{"score": 3, "max": 4, "grade": "B", "feedback": "..."}},
-                "category2": {{"score": 2, "max": 3, "grade": "C", "feedback": "..."}}
-            }},
-            "total_score": 12,
-            "max_score": {max_score},
-            "suggestion_cards": [
-                {{
-                    "card_id": "vocab_1",
-                    "type": "vocabulary",
-                    "priority": "high",
-                    "data": {{
-                        "original": "good",
-                        "suggestion": "excellent",
-                        "position": "paragraph 2, line 3",
-                        "explanation": "Use more impactful vocabulary"
-                    }}
-                }},
-                {{
-                    "card_id": "vocab_2",
-                    "type": "vocabulary",
-                    "priority": "medium",
-                    "data": {{
-                        "original": "very",
-                        "suggestion": "extremely",
-                        "position": "paragraph 3, line 1",
-                        "explanation": "Replace weak intensifier with stronger alternative"
-                    }}
-                }},
-                {{
-                    "card_id": "lang_1",
-                    "type": "language",
-                    "priority": "high",
-                    "data": {{
-                        "original": "Beijing is good because it has...",
-                        "suggestion": "Beijing stands out due to its...",
-                        "improvements": ["Use stronger verb", "More formal connector"],
-                        "explanation": "Improve sentence structure and formality"
-                    }}
-                }},
-                {{
-                    "card_id": "lang_2",
-                    "type": "language",
-                    "priority": "medium",
-                    "data": {{
-                        "original": "I think you will like it",
-                        "suggestion": "I believe you would find it captivating",
-                        "improvements": ["More formal verb", "Enhanced descriptive language"],
-                        "explanation": "Use more sophisticated language for formal writing"
-                    }}
-                }},
-                {{
-                    "card_id": "structure_1",
-                    "type": "rewrite",
-                    "priority": "medium",
-                    "data": {{
-                        "explanation": "Add transitional phrases between paragraphs for better flow",
-                        "suggestions": ["Use connecting words", "Improve paragraph transitions", "Add concluding summary"]
-                    }}
-                }}
-            ]
-        }}
+        {json_example}
         """
 
         try:
@@ -465,3 +405,60 @@ class AIService:
            - D (1): Handwriting average, paper average
            - E (0): Handwriting messy, paper messy
         """
+
+    def _get_json_example(self, essay_type: str, max_score: int) -> str:
+        """Get JSON format example based on essay type"""
+        if essay_type == "application":
+            return """
+        Return the response in the following JSON format (use the exact category names):
+        {
+            "scores": {
+                "Element Completeness": {"score": 3, "max": 4, "grade": "B", "feedback": "The essay includes all required elements but could be more detailed."},
+                "Format Specification": {"score": 3, "max": 4, "grade": "B", "feedback": "Format is mostly correct with minor layout issues."},
+                "Language Expression": {"score": 2, "max": 4, "grade": "C", "feedback": "Language is basically fluent but vocabulary could be richer."},
+                "Handwriting Quality": {"score": 2, "max": 3, "grade": "C", "feedback": "Handwriting is average and readable."}
+            },
+            "total_score": 10,
+            "max_score": 15,
+            "suggestion_cards": [
+                {
+                    "card_id": "vocab_1",
+                    "type": "vocabulary",
+                    "priority": "high",
+                    "data": {
+                        "original": "good",
+                        "suggestion": "excellent",
+                        "position": "paragraph 2, line 3",
+                        "explanation": "Use more impactful vocabulary"
+                    }
+                }
+            ]
+        }
+            """
+        else:  # continuation
+            return """
+        Return the response in the following JSON format (use the exact category names):
+        {
+            "scores": {
+                "Plot Coherence": {"score": 5, "max": 7, "grade": "B", "feedback": "Plot develops fairly naturally and is consistent with the original."},
+                "Language Expression": {"score": 4, "max": 6, "grade": "C", "feedback": "Language is basically appropriate but could be more vivid."},
+                "Theme Enhancement": {"score": 4, "max": 6, "grade": "C", "feedback": "Theme is basically clear but emotions could be more genuine."},
+                "Handwriting Quality": {"score": 3, "max": 6, "grade": "C", "feedback": "Handwriting is fairly neat and readable."}
+            },
+            "total_score": 16,
+            "max_score": 25,
+            "suggestion_cards": [
+                {
+                    "card_id": "vocab_1",
+                    "type": "vocabulary",
+                    "priority": "high",
+                    "data": {
+                        "original": "said",
+                        "suggestion": "whispered",
+                        "position": "paragraph 3, line 2",
+                        "explanation": "Use more descriptive dialogue tags"
+                    }
+                }
+            ]
+        }
+            """

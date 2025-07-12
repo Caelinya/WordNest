@@ -72,6 +72,14 @@ export interface ReviewResult {
 }
 
 // Essay Analysis Types
+export interface EssayVersionSummary {
+  id: number;
+  version_number: number;
+  total_score: number;
+  max_score: number;
+  created_at: string;
+}
+
 export interface Essay {
   id: number;
   title: string;
@@ -80,6 +88,7 @@ export interface Essay {
   created_at: string;
   updated_at: string;
   owner_id: number;
+  versions: EssayVersionSummary[];
 }
 
 export interface EssayVersion {

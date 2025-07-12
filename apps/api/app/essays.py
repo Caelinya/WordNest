@@ -8,7 +8,8 @@ from .auth import get_current_user
 from .models import User, Essay, EssayVersion, SuggestionCard
 from .schemas import (
     EssayCreate, EssayResponse, EssayVersionCreate, EssayVersionResponse,
-    SuggestionCardResponse, EssayAnalysisRequest, EssayAnalysisResponse
+    SuggestionCardResponse, EssayAnalysisRequest, EssayAnalysisResponse,
+    EssayVersionSummary
 )
 from .services.ai_service import AIService
 
@@ -48,16 +49,50 @@ async def get_essays(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
-    """Get user's essays"""
+    """Get user's essays with their versions"""
     query = select(Essay).where(Essay.owner_id == current_user.id)
-    
+
     if essay_type:
         query = query.where(Essay.type == essay_type)
-    
+
     query = query.offset(skip).limit(limit).order_by(Essay.created_at.desc())
-    
+
     essays = session.exec(query).all()
-    return essays
+
+    # Build response with versions
+    essay_responses = []
+    for essay in essays:
+        # Get versions for this essay
+        versions_query = select(EssayVersion).where(
+            EssayVersion.essay_id == essay.id
+        ).order_by(EssayVersion.version_number.desc())
+
+        versions = session.exec(versions_query).all()
+
+        # Convert to response format
+        version_summaries = [
+            EssayVersionSummary(
+                id=v.id,
+                version_number=v.version_number,
+                total_score=v.total_score,
+                max_score=v.max_score,
+                created_at=v.created_at
+            ) for v in versions
+        ]
+
+        essay_response = EssayResponse(
+            id=essay.id,
+            title=essay.title,
+            question=essay.question,
+            type=essay.type,
+            created_at=essay.created_at,
+            updated_at=essay.updated_at,
+            owner_id=essay.owner_id,
+            versions=version_summaries
+        )
+        essay_responses.append(essay_response)
+
+    return essay_responses
 
 @router.get("/{essay_id}", response_model=EssayResponse)
 async def get_essay(
@@ -65,22 +100,49 @@ async def get_essay(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
-    """Get a specific essay"""
+    """Get a specific essay with its versions"""
     essay = session.get(Essay, essay_id)
-    
+
     if not essay:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Essay not found"
         )
-    
+
     if essay.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to access this essay"
         )
-    
-    return essay
+
+    # Get versions for this essay
+    versions_query = select(EssayVersion).where(
+        EssayVersion.essay_id == essay_id
+    ).order_by(EssayVersion.version_number.desc())
+
+    versions = session.exec(versions_query).all()
+
+    # Convert to response format
+    version_summaries = [
+        EssayVersionSummary(
+            id=v.id,
+            version_number=v.version_number,
+            total_score=v.total_score,
+            max_score=v.max_score,
+            created_at=v.created_at
+        ) for v in versions
+    ]
+
+    return EssayResponse(
+        id=essay.id,
+        title=essay.title,
+        question=essay.question,
+        type=essay.type,
+        created_at=essay.created_at,
+        updated_at=essay.updated_at,
+        owner_id=essay.owner_id,
+        versions=version_summaries
+    )
 
 @router.post("/{essay_id}/versions", response_model=EssayVersionResponse)
 async def create_essay_version(
