@@ -50,6 +50,7 @@ class User(SQLModel, table=True):
     tags: List[Tag] = Relationship(back_populates="owner")
     folders: List[Folder] = Relationship(back_populates="owner")
     practice_lists: List["PracticeList"] = Relationship(back_populates="owner")
+    essays: List["Essay"] = Relationship(back_populates="owner")
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -126,20 +127,88 @@ class PracticeListItem(SQLModel, table=True):
         UniqueConstraint("practice_list_id", "note_id", name="unique_note_in_practice_list"),
         Index("idx_practice_list_item_order", "practice_list_id", "order_index"),
     )
-    
+
     id: int | None = Field(default=None, primary_key=True)
     order_index: int = Field(default=0, index=True)
     added_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    
+
     # Independent review statistics
     review_count: int = Field(default=0)
     last_reviewed: datetime | None = Field(default=None)
     mastery_level: int = Field(default=0)  # 0-5 mastery level
-    
+
     practice_list_id: int = Field(foreign_key="practicelist.id", index=True)
     practice_list: PracticeList = Relationship(back_populates="items")
-    
+
     note_id: int = Field(foreign_key="note.id", index=True)
     note: "Note" = Relationship(back_populates="practice_list_items")
-    
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+# Essay Analysis Models
+
+class Essay(SQLModel, table=True):
+    """Essay for analysis and scoring"""
+    __table_args__ = (
+        Index("idx_essay_owner_type", "owner_id", "type"),
+        Index("idx_essay_owner_created", "owner_id", "created_at"),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    title: str = Field(max_length=200)
+    question: str = Field()  # Essay question/prompt
+    type: str = Field(max_length=20)  # 'application' | 'continuation'
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), index=True)
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    owner_id: int = Field(foreign_key="user.id", index=True)
+    owner: "User" = Relationship(back_populates="essays")
+
+    versions: List["EssayVersion"] = Relationship(back_populates="essay", cascade_delete=True)
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+class EssayVersion(SQLModel, table=True):
+    """Version of an essay with content and scores"""
+    __table_args__ = (
+        Index("idx_essay_version_essay_version", "essay_id", "version_number"),
+        Index("idx_essay_version_created", "created_at"),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    version_number: int = Field()
+    content: str = Field()  # Essay content
+    scores: dict[str, Any] = Field(sa_column=Column(JSON))  # Detailed scores by category
+    total_score: int = Field()
+    max_score: int = Field()
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), index=True)
+
+    essay_id: int = Field(foreign_key="essay.id", index=True)
+    essay: Essay = Relationship(back_populates="versions")
+
+    suggestion_cards: List["SuggestionCard"] = Relationship(back_populates="version", cascade_delete=True)
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+class SuggestionCard(SQLModel, table=True):
+    """AI-generated suggestion card for essay improvement"""
+    __table_args__ = (
+        Index("idx_suggestion_card_version_type", "version_id", "type"),
+        Index("idx_suggestion_card_priority", "priority"),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    card_id: str = Field(max_length=50)  # Unique identifier for the card
+    type: str = Field(max_length=20)  # 'vocabulary' | 'language' | 'rewrite'
+    priority: str = Field(max_length=10)  # 'high' | 'medium' | 'low'
+    data: dict[str, Any] = Field(sa_column=Column(JSON))  # Card-specific data
+    applied: bool = Field(default=False)
+    applied_at: datetime | None = Field(default=None)
+
+    version_id: int = Field(foreign_key="essayversion.id", index=True)
+    version: EssayVersion = Relationship(back_populates="suggestion_cards")
+
     model_config = ConfigDict(arbitrary_types_allowed=True)

@@ -131,3 +131,76 @@ class PracticeListReorderRequest(SQLModel):
 
 class ReviewResultRequest(SQLModel):
     rating: str  # "again", "good", "easy"
+
+# --- Essay Analysis Schemas ---
+
+class EssayCreate(SQLModel):
+    title: str = Field(max_length=200)
+    question: str
+    type: str = Field(max_length=20)  # 'application' | 'continuation'
+
+    @field_validator('type')
+    @classmethod
+    def validate_essay_type(cls, v):
+        if v not in ['application', 'continuation']:
+            raise ValueError('Essay type must be either "application" or "continuation"')
+        return v
+
+class EssayResponse(SQLModel):
+    id: int
+    title: str
+    question: str
+    type: str
+    created_at: datetime
+    updated_at: datetime
+    owner_id: int
+
+class EssayVersionCreate(SQLModel):
+    content: str
+    scores: dict
+    total_score: int
+    max_score: int
+
+class EssayVersionResponse(SQLModel):
+    id: int
+    version_number: int
+    content: str
+    scores: dict
+    total_score: int
+    max_score: int
+    created_at: datetime
+    essay_id: int
+
+class SuggestionCardResponse(SQLModel):
+    id: int
+    card_id: str
+    type: str  # 'vocabulary' | 'language' | 'rewrite'
+    priority: str  # 'high' | 'medium' | 'low'
+    data: dict
+    applied: bool
+    applied_at: Optional[datetime] = None
+    version_id: int
+
+class EssayAnalysisRequest(SQLModel):
+    question: str
+    content: str
+    type: str = Field(max_length=20)  # 'application' | 'continuation'
+
+    @field_validator('type')
+    @classmethod
+    def validate_essay_type(cls, v):
+        if v not in ['application', 'continuation']:
+            raise ValueError('Essay type must be either "application" or "continuation"')
+        return v
+
+class SuggestionCardData(SQLModel):
+    card_id: str
+    type: str
+    priority: str
+    data: dict
+
+class EssayAnalysisResponse(SQLModel):
+    scores: dict
+    total_score: int
+    max_score: int
+    suggestion_cards: List[SuggestionCardData]

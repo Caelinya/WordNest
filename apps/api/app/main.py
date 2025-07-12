@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from . import auth, notes, parser, folders, tags, practice_lists
+from . import auth, notes, parser, folders, tags, practice_lists, essays
 from .db import engine
 from .models import SQLModel
 from .config import settings, logger
@@ -48,6 +48,7 @@ app.include_router(parser.router, prefix="/parser", tags=["parser"])
 app.include_router(folders.router, prefix="/folders", tags=["folders"])
 app.include_router(tags.router, prefix="/tags", tags=["tags"])
 app.include_router(practice_lists.router, prefix="/practice-lists", tags=["practice-lists"])
+app.include_router(essays.router, prefix="/essays", tags=["essays"])
 
 @app.get("/")
 def read_root():

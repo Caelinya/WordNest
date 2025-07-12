@@ -262,3 +262,200 @@ def analyze_text(text: str) -> dict | None:
     except Exception as e:
         logger.error(f"An unexpected error occurred during text analysis: {e}")
         return None
+
+# --- Essay Analysis Service ---
+
+class AIService:
+    """Service class for AI-powered essay analysis"""
+
+    def __init__(self):
+        self.client = client
+
+    async def analyze_essay(self, question: str, content: str, essay_type: str) -> dict:
+        """
+        Analyze an essay and return scores and suggestions
+
+        Args:
+            question: The essay question/prompt
+            content: The essay content
+            essay_type: 'application' or 'continuation'
+
+        Returns:
+            Dict containing scores, total_score, max_score, and suggestion_cards
+        """
+        if not self.client:
+            raise Exception("AI service is not available")
+
+        # Determine scoring criteria based on essay type
+        if essay_type == "application":
+            max_score = 15
+            scoring_prompt = self._get_application_essay_prompt()
+        else:  # continuation
+            max_score = 25
+            scoring_prompt = self._get_continuation_essay_prompt()
+
+        # Create the analysis prompt
+        analysis_prompt = f"""
+        {scoring_prompt}
+
+        Essay Question: {question}
+
+        Essay Content: {content}
+
+        Please analyze this essay and provide:
+        1. Detailed scores for each category
+        2. Overall assessment
+        3. Multiple specific improvement suggestions (aim for 5-8 suggestions across different categories)
+
+        For suggestions, please provide:
+        - Multiple vocabulary improvements (2-3 suggestions)
+        - Multiple language/grammar improvements (2-3 suggestions)
+        - Structure/content improvements (1-2 suggestions)
+
+        Return the response in the following JSON format:
+        {{
+            "scores": {{
+                "category1": {{"score": 3, "max": 4, "grade": "B", "feedback": "..."}},
+                "category2": {{"score": 2, "max": 3, "grade": "C", "feedback": "..."}}
+            }},
+            "total_score": 12,
+            "max_score": {max_score},
+            "suggestion_cards": [
+                {{
+                    "card_id": "vocab_1",
+                    "type": "vocabulary",
+                    "priority": "high",
+                    "data": {{
+                        "original": "good",
+                        "suggestion": "excellent",
+                        "position": "paragraph 2, line 3",
+                        "explanation": "Use more impactful vocabulary"
+                    }}
+                }},
+                {{
+                    "card_id": "vocab_2",
+                    "type": "vocabulary",
+                    "priority": "medium",
+                    "data": {{
+                        "original": "very",
+                        "suggestion": "extremely",
+                        "position": "paragraph 3, line 1",
+                        "explanation": "Replace weak intensifier with stronger alternative"
+                    }}
+                }},
+                {{
+                    "card_id": "lang_1",
+                    "type": "language",
+                    "priority": "high",
+                    "data": {{
+                        "original": "Beijing is good because it has...",
+                        "suggestion": "Beijing stands out due to its...",
+                        "improvements": ["Use stronger verb", "More formal connector"],
+                        "explanation": "Improve sentence structure and formality"
+                    }}
+                }},
+                {{
+                    "card_id": "lang_2",
+                    "type": "language",
+                    "priority": "medium",
+                    "data": {{
+                        "original": "I think you will like it",
+                        "suggestion": "I believe you would find it captivating",
+                        "improvements": ["More formal verb", "Enhanced descriptive language"],
+                        "explanation": "Use more sophisticated language for formal writing"
+                    }}
+                }},
+                {{
+                    "card_id": "structure_1",
+                    "type": "rewrite",
+                    "priority": "medium",
+                    "data": {{
+                        "explanation": "Add transitional phrases between paragraphs for better flow",
+                        "suggestions": ["Use connecting words", "Improve paragraph transitions", "Add concluding summary"]
+                    }}
+                }}
+            ]
+        }}
+        """
+
+        try:
+            result = call_ai(
+                system_prompt="You are an expert English essay evaluator specializing in exam scoring.",
+                user_prompt=analysis_prompt
+            )
+
+            if not result:
+                raise Exception("Failed to get AI analysis response")
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Essay analysis failed: {e}")
+            raise
+
+    def _get_application_essay_prompt(self) -> str:
+        """Get scoring prompt for application essays"""
+        return """
+        You are evaluating an application essay (total: 15 points) with these criteria:
+
+        1. Element Completeness (4 points):
+           - A (4): All required elements complete, content substantial
+           - B (3): Elements mostly complete, content fairly substantial
+           - C (2): Elements somewhat incomplete, content average
+           - D (1): Missing important elements, content simple
+           - E (0): Seriously missing elements, content empty
+
+        2. Format Specification (4 points):
+           - A (4): Format completely correct, layout beautiful
+           - B (3): Format mostly correct, layout good
+           - C (2): Format with minor errors, layout average
+           - D (1): Format with many errors, layout messy
+           - E (0): Format seriously wrong, non-compliant
+
+        3. Language Expression (4 points):
+           - A (4): Language fluent, expression accurate, vocabulary rich
+           - B (3): Language fairly fluent, expression fairly accurate
+           - C (2): Language basically fluent, expression basically accurate
+           - D (1): Language not fluent enough, expression has errors
+           - E (0): Language expression has serious problems
+
+        4. Handwriting Quality (3 points):
+           - A (3): Handwriting neat, paper clean
+           - B (2): Handwriting fairly neat, paper fairly clean
+           - C (1): Handwriting average, paper average
+           - D (0): Handwriting messy, paper messy
+        """
+
+    def _get_continuation_essay_prompt(self) -> str:
+        """Get scoring prompt for continuation essays"""
+        return """
+        You are evaluating a continuation writing essay (total: 25 points) with these criteria:
+
+        1. Plot Coherence (7 points):
+           - A (6-7): Plot develops naturally, highly consistent with original
+           - B (5): Plot develops fairly naturally, fairly consistent with original
+           - C (3-4): Plot development basically reasonable, basically consistent
+           - D (1-2): Plot development unreasonable, low consistency
+           - E (0): Plot development unreasonable, seriously disconnected
+
+        2. Language Expression (6 points):
+           - A (6): Language vivid, expression accurate, vocabulary rich and varied
+           - B (5): Language fairly vivid, expression fairly accurate, vocabulary fairly rich
+           - C (3-4): Language basically appropriate, expression basically accurate
+           - D (1-2): Language expression problematic, vocabulary poor
+           - E (0): Language expression seriously wrong
+
+        3. Theme Enhancement (6 points):
+           - A (6): Theme clear, emotions genuine, deep thinking
+           - B (5): Theme fairly clear, emotions fairly genuine
+           - C (3-4): Theme basically clear, emotions basically genuine
+           - D (1-2): Theme unclear, insufficient emotional expression
+           - E (0): Theme unclear, lacks emotion
+
+        4. Handwriting Quality (6 points):
+           - A (5-6): Handwriting neat and beautiful, paper very clean
+           - B (4): Handwriting neat, paper clean
+           - C (2-3): Handwriting fairly neat, paper fairly clean
+           - D (1): Handwriting average, paper average
+           - E (0): Handwriting messy, paper messy
+        """

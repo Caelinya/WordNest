@@ -70,3 +70,63 @@ export interface PracticeListUpdate {
 export interface ReviewResult {
   rating: "again" | "good" | "easy";
 }
+
+// Essay Analysis Types
+export interface Essay {
+  id: number;
+  title: string;
+  question: string;
+  type: "application" | "continuation";
+  created_at: string;
+  updated_at: string;
+  owner_id: number;
+}
+
+export interface EssayVersion {
+  id: number;
+  version_number: number;
+  content: string;
+  scores: Record<string, ScoreDetail>;
+  total_score: number;
+  max_score: number;
+  created_at: string;
+  essay_id: number;
+}
+
+export interface ScoreDetail {
+  score: number;
+  max: number;
+  grade: string;
+  feedback: string;
+}
+
+export interface SuggestionCard {
+  id: number;
+  card_id: string;
+  type: "vocabulary" | "language" | "rewrite";
+  priority: "high" | "medium" | "low";
+  data: Record<string, any>;
+  applied: boolean;
+  applied_at?: string;
+  version_id: number;
+}
+
+export interface EssayAnalysisRequest {
+  question: string;
+  content: string;
+  type: "application" | "continuation";
+}
+
+export interface EssayAnalysisResponse {
+  scores: Record<string, ScoreDetail>;
+  total_score: number;
+  max_score: number;
+  suggestion_cards: SuggestionCardData[];
+}
+
+export interface SuggestionCardData {
+  card_id: string;
+  type: "vocabulary" | "language" | "rewrite";
+  priority: "high" | "medium" | "low";
+  data: Record<string, any>;
+}

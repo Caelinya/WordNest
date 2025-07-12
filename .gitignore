@@ -47,6 +47,7 @@ CODE_REVIEW_REPORT.md
 CLAUDE.md
 gemini-review.md
 .claude
+composition_plan.md
 
 # Python cache
 __pycache__/
