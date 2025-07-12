@@ -18,7 +18,7 @@ async def lifespan(app: FastAPI):
     logger.info("Database tables created successfully.")
     yield
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, redirect_slashes=False)
 
 # Configure CORS
 origins = []

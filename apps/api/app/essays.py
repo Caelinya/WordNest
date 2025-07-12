@@ -18,7 +18,7 @@ def get_session():
     with Session(engine) as session:
         yield session
 
-@router.post("/", response_model=EssayResponse)
+@router.post("", response_model=EssayResponse)
 async def create_essay(
     essay_data: EssayCreate,
     session: Session = Depends(get_session),
@@ -40,7 +40,7 @@ async def create_essay(
     
     return essay
 
-@router.get("/", response_model=List[EssayResponse])
+@router.get("", response_model=List[EssayResponse])
 async def get_essays(
     skip: int = 0,
     limit: int = 100,
