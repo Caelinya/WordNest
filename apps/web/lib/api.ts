@@ -48,8 +48,12 @@ api.interceptors.response.use(
       // Don't redirect if it's an auth endpoint request
       const isAuthRequest = error.config?.url?.includes('/auth/');
 
-      // Avoid redirect loops if already on the login page or if it's an auth request
-      if (window.location.pathname !== '/' && !isAuthRequest) {
+      if (isAuthRequest) {
+        // For auth requests (login/register), show error message instead of redirecting
+        const message = error.response?.data?.detail || 'Invalid credentials. Please check your username and password.';
+        toast.error(message);
+      } else if (window.location.pathname !== '/') {
+        // For other 401 errors, handle session expiration
         toast.error("Your session has expired. Please log in again.");
         // We can't call the useAuth hook here, so we manually clear the cookie
         // and force a reload, which will trigger the AuthProvider logic.

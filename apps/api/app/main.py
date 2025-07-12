@@ -6,6 +6,7 @@ from . import auth, notes, parser, folders, tags, practice_lists
 from .db import engine
 from .models import SQLModel
 from .config import settings, logger
+from .middleware import RateLimitMiddleware
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
@@ -32,6 +33,13 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+# Add rate limiting middleware for auth endpoints
+app.add_middleware(
+    RateLimitMiddleware,
+    max_requests=5,  # 5 attempts
+    window_seconds=900  # per 15 minutes
 )
 
 app.include_router(auth.router, prefix="/auth", tags=["auth"])

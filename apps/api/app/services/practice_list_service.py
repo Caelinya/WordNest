@@ -3,7 +3,7 @@ from sqlmodel import Session, select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 from typing import List
-from datetime import datetime
+from datetime import datetime, timezone
 
 from ..models import PracticeList, PracticeListItem, Note, User
 from ..schemas import PracticeListCreate, PracticeListUpdate, PracticeListRead, PracticeListDetail, PracticeListItemCreate, PracticeListReorderRequest
@@ -72,7 +72,7 @@ def update_practice_list_service(*, session: Session, practice_list_id: int, pra
     for key, value in update_data.items():
         setattr(practice_list, key, value)
     
-    practice_list.updated_at = datetime.utcnow()
+    practice_list.updated_at = datetime.now(timezone.utc)
     session.add(practice_list)
     
     try:
@@ -144,7 +144,7 @@ def add_items_to_list_service(*, session: Session, practice_list_id: int, item_c
         added_items.append(new_item)
     
     if added_items:
-        practice_list.updated_at = datetime.utcnow()
+        practice_list.updated_at = datetime.now(timezone.utc)
         session.add(practice_list)
         session.commit()
         for item in added_items:
@@ -163,7 +163,7 @@ def remove_item_from_list_service(*, session: Session, practice_list_id: int, it
         raise HTTPException(status_code=404, detail="Item not found in the specified practice list.")
         
     practice_list = session.get(PracticeList, practice_list_id)
-    practice_list.updated_at = datetime.utcnow()
+    practice_list.updated_at = datetime.now(timezone.utc)
 
     session.delete(item)
     session.add(practice_list)
@@ -193,7 +193,7 @@ def reorder_list_items_service(*, session: Session, practice_list_id: int, reord
         item.order_index = idx
         session.add(item)
     
-    practice_list.updated_at = datetime.utcnow()
+    practice_list.updated_at = datetime.now(timezone.utc)
     session.add(practice_list)
     session.commit()
     return

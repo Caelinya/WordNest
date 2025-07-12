@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
 from typing import List
+from datetime import datetime, timezone
 
 from .db import engine
 from .models import User, PracticeList, PracticeListItem
@@ -149,7 +150,7 @@ def record_review_result(
 
     # Simple mastery level adjustment
     item.review_count += 1
-    item.last_reviewed = datetime.utcnow()
+    item.last_reviewed = datetime.now(timezone.utc)
     if review_result.rating == "easy":
         item.mastery_level = min(5, item.mastery_level + 2)
     elif review_result.rating == "good":

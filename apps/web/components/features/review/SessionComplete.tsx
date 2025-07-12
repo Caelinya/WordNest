@@ -1,3 +1,6 @@
+import React from "react";
+import { Button } from "@/components/ui/button";
+
 interface SessionCompleteProps {
   title: string;
   description: string;
@@ -11,9 +14,7 @@ interface SessionCompleteProps {
   };
 }
 
-import { Button } from "@/components/ui/button";
-
-export function SessionComplete({ 
+export const SessionComplete = React.memo(function SessionComplete({ 
   title, 
   description, 
   primaryButton, 
@@ -40,4 +41,4 @@ export function SessionComplete({
       </div>
     </div>
   );
-}
+});

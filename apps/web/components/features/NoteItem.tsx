@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useNoteItem } from "@/hooks/use-note-item";
 import { Note } from "@/types/notes";
 import { NoteItemDisplay } from "./NoteItemDisplay";
@@ -9,7 +10,7 @@ interface NoteItemProps {
   note: Note;
 }
 
-export function NoteItem({ note }: NoteItemProps) {
+export const NoteItem = React.memo(function NoteItem({ note }: NoteItemProps) {
   const {
     isEditing,
     editText,
@@ -42,4 +43,4 @@ export function NoteItem({ note }: NoteItemProps) {
       isDeleting={isDeleting}
     />
   );
-}
+});

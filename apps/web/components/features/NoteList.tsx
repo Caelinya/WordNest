@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useDisplayMode } from "@/contexts/DisplayModeContext";
 import { Note } from "@/types/notes";
 import { NoteItem } from "./NoteItem";
@@ -11,7 +12,7 @@ interface NoteListProps {
   totalNotes: number; // To show the total count even when search results are displayed
 }
 
-export function NoteList({ notes, isLoading, totalNotes }: NoteListProps) {
+export const NoteList = React.memo(function NoteList({ notes, isLoading, totalNotes }: NoteListProps) {
   const { displayMode, toggleDisplayMode } = useDisplayMode();
 
   return (
@@ -35,4 +36,4 @@ export function NoteList({ notes, isLoading, totalNotes }: NoteListProps) {
       </div>
     </div>
   );
-}
+});
