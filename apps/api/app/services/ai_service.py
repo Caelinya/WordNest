@@ -158,6 +158,43 @@ def get_embedding(text: str) -> list[float] | None:
         return None
 
 @backoff.on_exception(backoff.expo, (RateLimitError, APITimeoutError, APIConnectionError), max_tries=3)
+def call_ai(system_prompt: str, user_prompt: str) -> dict | None:
+    """
+    Generic AI call function with custom system and user prompts.
+    Returns raw JSON response without validation for maximum flexibility.
+    """
+    if not client:
+        print("AI service is disabled. Skipping AI call.")
+        return None
+
+    try:
+        completion = client.chat.completions.create(
+            model=settings.AI_MODEL,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            response_format={"type": "json_object"},
+        )
+
+        raw_json_response = completion.choices[0].message.content
+        if not raw_json_response:
+            print("AI returned an empty response.")
+            return None
+
+        return json.loads(raw_json_response)
+
+    except APIError as e:
+        print(f"OpenAI APIError during AI call: {e}")
+        return None
+    except json.JSONDecodeError as e:
+        print(f"Failed to decode JSON from AI response: {e}")
+        return None
+    except Exception as e:
+        print(f"An unexpected error occurred during AI call: {e}")
+        return None
+
+@backoff.on_exception(backoff.expo, (RateLimitError, APITimeoutError, APIConnectionError), max_tries=3)
 def analyze_text(text: str) -> dict | None:
     """
     Analyzes text with retry logic and returns a structured analysis.
@@ -165,7 +202,7 @@ def analyze_text(text: str) -> dict | None:
     if not client:
         print("AI service is disabled. Skipping text analysis.")
         return None
-    
+
     try:
         completion = client.chat.completions.create(
             model=settings.AI_MODEL,
@@ -175,14 +212,14 @@ def analyze_text(text: str) -> dict | None:
             ],
             response_format={"type": "json_object"},
         )
-        
+
         raw_json_response = completion.choices[0].message.content
         if not raw_json_response:
             print("AI returned an empty response.")
             return None
-        
+
         json_response = json.loads(raw_json_response)
-        
+
         validated_obj = AIAnalysisResponse.model_validate(json_response)
         return validated_obj.model_dump()
 
