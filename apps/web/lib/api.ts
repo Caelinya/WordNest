@@ -1,7 +1,7 @@
 import axios, { InternalAxiosRequestConfig } from 'axios';
 import { toast } from 'sonner';
 import { getCookie } from 'cookies-next';
-import { PracticeList, PracticeListDetail, PracticeListCreate, PracticeListUpdate, PracticeListItem, ReviewResult } from "@/types/notes";
+import { PracticeList, PracticeListDetail, PracticeListCreate, PracticeListUpdate, PracticeListItem, ReviewResult, Essay, EssayVersion, EssayAnalysisRequest, EssayAnalysisResponse } from "@/types/notes";
 
 const api = axios.create({
   baseURL: '/api', // All requests will be prefixed with /api
@@ -228,5 +228,60 @@ export const practiceListsApi = {
 
   recordReview: async (listId: number, itemId: number, result: ReviewResult): Promise<void> => {
     await api.post(`/practice-lists/${listId}/items/${itemId}/review`, result);
+  },
+};
+
+// Essay API
+export const essayApi = {
+  // Analysis
+  analyze: async (data: EssayAnalysisRequest): Promise<EssayAnalysisResponse> => {
+    const response = await api.post("/essays/analyze", data);
+    return response.data;
+  },
+
+  // CRUD operations
+  create: async (data: { title: string; question: string; type: string }): Promise<Essay> => {
+    const response = await api.post("/essays", data);
+    return response.data;
+  },
+
+  getAll: async (): Promise<Essay[]> => {
+    const response = await api.get("/essays");
+    return response.data;
+  },
+
+  get: async (id: number): Promise<Essay> => {
+    const response = await api.get(`/essays/${id}`);
+    return response.data;
+  },
+
+  update: async (id: number, data: { title?: string; question?: string }): Promise<Essay> => {
+    const response = await api.put(`/essays/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: number): Promise<void> => {
+    await api.delete(`/essays/${id}`);
+  },
+
+  // Version management
+  createVersion: async (essayId: number, data: {
+    content: string;
+    scores: Record<string, any>;
+    total_score: number;
+    max_score: number;
+  }): Promise<EssayVersion> => {
+    const response = await api.post(`/essays/${essayId}/versions`, data);
+    return response.data;
+  },
+
+  getVersions: async (essayId: number): Promise<EssayVersion[]> => {
+    const response = await api.get(`/essays/${essayId}/versions`);
+    return response.data;
+  },
+
+  getVersion: async (essayId: number, versionId: number): Promise<EssayVersion> => {
+    const response = await api.get(`/essays/${essayId}/versions/${versionId}`);
+    return response.data;
   },
 };

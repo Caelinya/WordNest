@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     # --- AI Service Endpoint (Optional) ---
     BASE_URL: str
     AI_MODEL: str
+    ESSAY_AI_MODEL: str | None = None  # Specific model for essay analysis
     EMBEDDING_MODEL: str
 
     # --- Database (Optional) ---

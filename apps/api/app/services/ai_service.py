@@ -188,7 +188,7 @@ def get_embedding(text: str) -> list[float] | None:
         return None
 
 @backoff.on_exception(backoff.expo, (RateLimitError, APITimeoutError, APIConnectionError), max_tries=3)
-def call_ai(system_prompt: str, user_prompt: str) -> dict | None:
+def call_ai(system_prompt: str, user_prompt: str, model: str | None = None) -> dict | None:
     """
     Generic AI call function with custom system and user prompts.
     Returns raw JSON response without validation for maximum flexibility.
@@ -197,9 +197,12 @@ def call_ai(system_prompt: str, user_prompt: str) -> dict | None:
         logger.info("AI service is disabled. Skipping AI call.")
         return None
 
+    # Use specified model or fall back to default
+    ai_model = model or settings.AI_MODEL
+
     try:
         completion = client.chat.completions.create(
-            model=settings.AI_MODEL,
+            model=ai_model,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
@@ -379,9 +382,12 @@ class AIService:
         """
 
         try:
+            # Use essay-specific model if configured, otherwise fall back to default
+            essay_model = settings.ESSAY_AI_MODEL or settings.AI_MODEL
             result = call_ai(
                 system_prompt="You are an expert English essay evaluator specializing in exam scoring.",
-                user_prompt=analysis_prompt
+                user_prompt=analysis_prompt,
+                model=essay_model
             )
 
             if not result:

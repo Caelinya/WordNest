@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
-import api from "@/lib/api";
+import api, { essayApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -23,10 +23,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { EssayAnalysisRequest, EssayAnalysisResponse } from "@/types/notes";
+import { EssayAnalysisRequest, EssayAnalysisResponse, Essay } from "@/types/notes";
 import { ScoreBar } from "./essay/ScoreBar";
 import { SuggestionPanel } from "./essay/SuggestionPanel";
-import { Loader2, FileText, Sparkles } from "lucide-react";
+import { Loader2, FileText, Sparkles, Save } from "lucide-react";
 
 export function EssayAnalysis() {
   const [title, setTitle] = useState("");
@@ -34,13 +34,13 @@ export function EssayAnalysis() {
   const [content, setContent] = useState("");
   const [essayType, setEssayType] = useState<"application" | "continuation">("application");
   const [analysisResult, setAnalysisResult] = useState<EssayAnalysisResponse | null>(null);
+  const [currentEssay, setCurrentEssay] = useState<Essay | null>(null);
 
   const { isAuthenticated } = useAuth();
 
   const analyzeEssayMutation = useMutation({
     mutationFn: async (data: EssayAnalysisRequest) => {
-      const response = await api.post("/essays/analyze", data);
-      return response.data;
+      return await essayApi.analyze(data);
     },
     onSuccess: (data: EssayAnalysisResponse) => {
       setAnalysisResult(data);
@@ -48,6 +48,39 @@ export function EssayAnalysis() {
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.detail || "Analysis failed");
+    },
+  });
+
+  const saveVersionMutation = useMutation({
+    mutationFn: async () => {
+      if (!analysisResult) {
+        throw new Error("No analysis result to save");
+      }
+
+      // Create essay if it doesn't exist
+      let essay = currentEssay;
+      if (!essay) {
+        essay = await essayApi.create({
+          title: title.trim() || `${essayType} Essay`,
+          question: question.trim(),
+          type: essayType,
+        });
+        setCurrentEssay(essay);
+      }
+
+      // Create version
+      return await essayApi.createVersion(essay.id!, {
+        content: content.trim(),
+        scores: analysisResult.scores,
+        total_score: analysisResult.total_score,
+        max_score: analysisResult.max_score,
+      });
+    },
+    onSuccess: () => {
+      toast.success("Essay version saved successfully!");
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.detail || "Failed to save essay version");
     },
   });
 
@@ -70,6 +103,15 @@ export function EssayAnalysis() {
     setContent("");
     setEssayType("application");
     setAnalysisResult(null);
+    setCurrentEssay(null);
+  };
+
+  const handleSaveVersion = () => {
+    if (!analysisResult) {
+      toast.error("Please analyze the essay first");
+      return;
+    }
+    saveVersionMutation.mutate();
   };
 
   if (!isAuthenticated) {
@@ -180,6 +222,25 @@ export function EssayAnalysis() {
                     </>
                   )}
                 </Button>
+                {analysisResult && (
+                  <Button 
+                    variant="outline" 
+                    onClick={handleSaveVersion}
+                    disabled={saveVersionMutation.isPending}
+                  >
+                    {saveVersionMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Save Version
+                      </>
+                    )}
+                  </Button>
+                )}
                 <Button variant="outline" onClick={handleReset}>
                   Reset
                 </Button>
