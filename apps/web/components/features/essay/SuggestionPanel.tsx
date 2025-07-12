@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { SuggestionCardData } from "@/types/notes";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SuggestionCardData, Note, Folder } from "@/types/notes";
 import { 
   Lightbulb, 
   BookOpen, 
@@ -15,6 +18,9 @@ import {
   Plus
 } from "lucide-react";
 import { toast } from "sonner";
+import { NoteItemDisplay } from "../NoteItemDisplay";
+import api from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SuggestionPanelProps {
   suggestions: SuggestionCardData[];
@@ -63,6 +69,35 @@ const getTypeLabel = (type: string) => {
 
 export function SuggestionPanel({ suggestions, content, onContentChange }: SuggestionPanelProps) {
   const [appliedSuggestions, setAppliedSuggestions] = useState<Set<string>>(new Set());
+  const [previewNote, setPreviewNote] = useState<Note | null>(null);
+  const [selectedFolderId, setSelectedFolderId] = useState<string>("");
+  const [savingSuggestion, setSavingSuggestion] = useState<SuggestionCardData | null>(null);
+  
+  const { isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
+
+  const { data: folders = [] } = useQuery<Folder[]>({
+    queryKey: ["folders"],
+    queryFn: () => api.get("/folders").then((res) => res.data),
+    enabled: isAuthenticated,
+  });
+
+  const previewNoteMutation = useMutation<Note, Error, { text: string; folder_id?: number }>({
+    mutationFn: (data) => api.post("/notes/preview", data).then((res) => res.data),
+    onSuccess: (data) => {
+      setPreviewNote(data);
+    },
+  });
+
+  const createNoteMutation = useMutation<Note, Error, { text: string; tags: string[]; folder_id?: number }>({
+    mutationFn: (data) => api.post("/notes", data).then((res) => res.data),
+    onSuccess: () => {
+      setPreviewNote(null);
+      setSavingSuggestion(null);
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      toast.success("Suggestion saved to vocabulary notes!");
+    },
+  });
 
   const handleApplySuggestion = (suggestion: SuggestionCardData) => {
     try {
@@ -96,6 +131,66 @@ export function SuggestionPanel({ suggestions, content, onContentChange }: Sugge
       const position = suggestion.data.position || "text content";
       toast.info(`Look for "${suggestion.data.original}" in ${position}`);
     }
+  };
+
+  const handleSaveSuggestion = (suggestion: SuggestionCardData) => {
+    if (!isAuthenticated) {
+      toast.error("Please log in to save suggestions");
+      return;
+    }
+
+    // Determine what text to save based on suggestion type
+    let textToSave = "";
+    if (suggestion.type === "vocabulary" && suggestion.data.suggestion) {
+      // For vocabulary, save the improved word/phrase
+      textToSave = suggestion.data.suggestion;
+    } else if ((suggestion.type === "language" || suggestion.type === "structure") && suggestion.data.suggestion) {
+      textToSave = suggestion.data.suggestion;
+    } else {
+      toast.error("Unable to determine text to save");
+      return;
+    }
+
+    setSavingSuggestion(suggestion);
+    
+    // Set default folder if available
+    if (folders.length > 0 && !selectedFolderId) {
+      const defaultFolder = folders.find((f: Folder) => f.name === 'default');
+      if (defaultFolder) {
+        setSelectedFolderId(defaultFolder.id.toString());
+      } else {
+        setSelectedFolderId(folders[0].id.toString());
+      }
+    }
+
+    // Preview the note
+    previewNoteMutation.mutate({ 
+      text: textToSave, 
+      folder_id: selectedFolderId ? Number(selectedFolderId) : undefined 
+    });
+  };
+
+  const handleConfirmSave = () => {
+    if (!previewNote || !savingSuggestion) return;
+    
+    let textToSave = "";
+    if (savingSuggestion.type === "vocabulary" && savingSuggestion.data.suggestion) {
+      // For vocabulary, save the improved word/phrase
+      textToSave = savingSuggestion.data.suggestion;
+    } else if ((savingSuggestion.type === "language" || savingSuggestion.type === "structure") && savingSuggestion.data.suggestion) {
+      textToSave = savingSuggestion.data.suggestion;
+    }
+
+    createNoteMutation.mutate({
+      text: textToSave,
+      tags: [savingSuggestion.type, "essay-suggestion"],
+      folder_id: selectedFolderId ? Number(selectedFolderId) : undefined,
+    });
+  };
+
+  const handleCancelSave = () => {
+    setPreviewNote(null);
+    setSavingSuggestion(null);
   };
 
   const sortedSuggestions = [...suggestions].sort((a, b) => {
@@ -268,10 +363,11 @@ export function SuggestionPanel({ suggestions, content, onContentChange }: Sugge
                       size="sm"
                       variant="ghost"
                       className="text-xs"
-                      onClick={() => toast.info("Added to vocabulary notes")}
+                      onClick={() => handleSaveSuggestion(suggestion)}
+                      disabled={previewNoteMutation.isPending}
                     >
                       <Plus className="mr-1 h-3 w-3" />
-                      Save
+                      {previewNoteMutation.isPending && savingSuggestion?.card_id === suggestion.card_id ? "Saving..." : "Save"}
                     </Button>
                   </div>
                 </div>
@@ -280,6 +376,61 @@ export function SuggestionPanel({ suggestions, content, onContentChange }: Sugge
           </div>
         )}
       </CardContent>
+      
+      {/* Save Preview Dialog */}
+      <Dialog open={!!previewNote} onOpenChange={() => handleCancelSave()}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Save to Vocabulary Notes</DialogTitle>
+          </DialogHeader>
+          
+          {previewNote && (
+            <div className="space-y-4">
+              {/* Folder Selection */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Select Folder:</label>
+                <Select 
+                  value={selectedFolderId} 
+                  onValueChange={setSelectedFolderId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a folder" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {folders.map((folder) => (
+                      <SelectItem key={folder.id} value={folder.id.toString()}>
+                        {folder.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Preview */}
+              <div className="rounded-lg border border-dashed p-4">
+                <NoteItemDisplay 
+                  note={previewNote} 
+                  onEdit={() => {}} 
+                  onDelete={() => {}} 
+                  isDeleting={false} 
+                />
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancelSave}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleConfirmSave} 
+              disabled={createNoteMutation.isPending}
+            >
+              {createNoteMutation.isPending ? "Saving..." : "Confirm & Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
